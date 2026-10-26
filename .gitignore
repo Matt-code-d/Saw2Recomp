@@ -26,6 +26,7 @@ launcher/.vs/
 .vs/
 .vscode/
 .idea/
+.cursor/
 *.user
 *.suo
 Thumbs.db
