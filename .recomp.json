@@ -1,0 +1,34 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Saw II: Flesh & Blood",
+  "wikidata": "Q392689",
+  "system": "Xbox 360",
+  "type": "recomp",
+  "original": {
+    "region": "USA",
+    "serial": "4B4E0822"
+  },
+  "project": "Saw2Recomp",
+  "status": "playable",
+  "targets": ["Windows"],
+  "toolchain": "Rexglue",
+  "approach": "Static recompilation via ReXGlue SDK, UE3 title",
+  "maintainers": [
+    {
+      "name": "Matt-code-d",
+      "link": "https://github.com/Matt-code-d"
+    }
+  ],
+  "links": [
+    {
+      "label": "Releases",
+      "url": "https://github.com/Matt-code-d/Saw2Recomp/releases"
+    }
+  ],
+  "help": [
+    "Missing PPC function hints",
+    "Graphics quirks / reflections",
+    "Linux / other targets"
+  ],
+  "notes": "Unofficial PC recomp with WPF launcher. Bring your own legally owned dump. Public RelWithDebInfo builds on GitHub Releases."
+}
