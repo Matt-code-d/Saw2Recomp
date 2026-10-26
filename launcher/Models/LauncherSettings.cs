@@ -1,0 +1,176 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Saw2Launcher.Models;
+
+public sealed class LauncherSettings
+{
+    public string InstallRoot { get; set; } = "";
+    public string GameDataRoot { get; set; } = "";
+    public string GameExePath { get; set; } = "";
+
+    public uint UserLanguage { get; set; } = 1;
+    public string UiLocale { get; set; } = "en";
+
+    // Video / display
+    public string Resolution { get; set; } = "1080p";
+    public int WindowWidth { get; set; } = 1920;
+    public int WindowHeight { get; set; } = 1080;
+    public bool Fullscreen { get; set; } = true;
+    public int Monitor { get; set; } = 0;
+    public double RefreshRate { get; set; } = 60;
+    public string FpsPreset { get; set; } = "60";
+    public bool VSync { get; set; } = true;
+    public bool AllowTearing { get; set; } = false;
+    public bool ClockNoScaling { get; set; } = false;
+    public bool PresentLetterbox { get; set; } = true;
+    public bool PresentDither { get; set; } = false;
+    public string GpuPlugin { get; set; } = "xenos";
+    public string PresentEffect { get; set; } = "bilinear";
+    public string FsrQualityMode { get; set; } = "auto";
+    public double FsrSharpnessReduction { get; set; } = 0.2;
+    public int FsrMaxUpsamplingPasses { get; set; } = 4;
+    public double CasAdditionalSharpness { get; set; } = 0.0;
+
+    // Audio
+    public bool AudioMute { get; set; } = false;
+    public int AudioMaxQFrames { get; set; } = 8;
+
+    // Input
+    public string InputBackend { get; set; } = "sdl";
+    public bool MnkMode { get; set; } = false;
+    public bool MnkMouse { get; set; } = true;
+    public double MnkSensitivity { get; set; } = 1.0;
+    public bool GuideButton { get; set; } = false;
+
+    // Advanced
+    public bool SkipBootLogos { get; set; } = false;
+    public string LogLevel { get; set; } = "info";
+    public bool VerboseLog { get; set; } = false;
+    public bool WriteLogFile { get; set; } = true;
+    public int UserCountry { get; set; } = 103;
+    public string ExtraArgs { get; set; } = "";
+
+    public static string DefaultPath()
+    {
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "saw2");
+        Directory.CreateDirectory(dir);
+        return Path.Combine(dir, "launcher_settings.json");
+    }
+
+    public static LauncherSettings Load(string? path = null)
+    {
+        path ??= DefaultPath();
+        if (!File.Exists(path))
+            return new LauncherSettings();
+        try
+        {
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<LauncherSettings>(json, JsonOpts()) ?? new LauncherSettings();
+        }
+        catch
+        {
+            return new LauncherSettings();
+        }
+    }
+
+    public void Save(string? path = null)
+    {
+        path ??= DefaultPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOpts()));
+    }
+
+    public List<string> ToProcessArguments()
+    {
+        var args = new List<string>();
+        if (!string.IsNullOrWhiteSpace(GameDataRoot))
+            args.Add($"--game_data_root={GameDataRoot}");
+
+        args.Add($"--gpu_plugin={GpuPlugin}");
+        args.Add($"--user_language={UserLanguage}");
+        args.Add($"--user_country={UserCountry}");
+        args.Add($"--resolution={Resolution}");
+        args.Add($"--window_width={WindowWidth}");
+        args.Add($"--window_height={WindowHeight}");
+        args.Add(Fullscreen ? "--fullscreen" : "--no-fullscreen");
+        args.Add($"--monitor={Monitor}");
+        args.Add($"--video_mode_refresh_rate={RefreshRate}");
+        args.Add(VSync ? "--vsync" : "--no-vsync");
+        args.Add(AllowTearing
+            ? "--d3d12_allow_variable_refresh_rate_and_tearing"
+            : "--no-d3d12_allow_variable_refresh_rate_and_tearing");
+        args.Add(ClockNoScaling ? "--clock_no_scaling" : "--no-clock_no_scaling");
+        args.Add(PresentLetterbox ? "--present_letterbox" : "--no-present_letterbox");
+        args.Add(PresentDither ? "--present_dither" : "--no-present_dither");
+        args.Add($"--present_effect={PresentEffect}");
+
+        var effect = PresentEffect.Trim().ToLowerInvariant();
+        if (effect is "fsr" or "fsr2" or "fsr3")
+        {
+            args.Add($"--present_fsr_quality_mode={FsrQualityMode}");
+            args.Add($"--present_fsr_sharpness_reduction={FsrSharpnessReduction}");
+            args.Add($"--present_fsr_max_upsampling_passes={FsrMaxUpsamplingPasses}");
+        }
+        if (effect is "cas" or "fsr" or "fsr2" or "fsr3")
+            args.Add($"--present_cas_additional_sharpness={CasAdditionalSharpness}");
+
+        args.Add(AudioMute ? "--audio_mute" : "--no-audio_mute");
+        args.Add($"--audio_maxqframes={AudioMaxQFrames}");
+        args.Add($"--input_backend={InputBackend}");
+        args.Add(MnkMode ? "--mnk_mode" : "--no-mnk_mode");
+        args.Add(MnkMouse ? "--mnk_mouse" : "--no-mnk_mouse");
+        args.Add($"--mnk_sensitivity={MnkSensitivity}");
+        args.Add(GuideButton ? "--guide_button" : "--no-guide_button");
+        args.Add($"--log_level={LogLevel}");
+        if (VerboseLog) args.Add("--verbose");
+        if (WriteLogFile)
+        {
+            var log = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "saw2", "saw2.log");
+            args.Add($"--log_file={log}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(ExtraArgs))
+            args.AddRange(SplitArgs(ExtraArgs));
+
+        return args;
+    }
+
+    private static IEnumerable<string> SplitArgs(string raw)
+    {
+        var list = new List<string>();
+        var cur = "";
+        var inQuote = false;
+        foreach (var ch in raw)
+        {
+            if (ch == '"') { inQuote = !inQuote; continue; }
+            if (char.IsWhiteSpace(ch) && !inQuote)
+            {
+                if (cur.Length > 0) { list.Add(cur); cur = ""; }
+                continue;
+            }
+            cur += ch;
+        }
+        if (cur.Length > 0) list.Add(cur);
+        return list;
+    }
+
+    private static JsonSerializerOptions JsonOpts() => new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+}
+
+public sealed class DetectedLanguage
+{
+    public uint Id { get; init; }
+    public string Code { get; init; } = "";
+    public string DisplayName { get; init; } = "";
+    public string StartupToken { get; init; } = "";
+}

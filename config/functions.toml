@@ -1,0 +1,26 @@
+# Manual function boundaries for Saw II (Title ID 4B4E0822).
+
+[functions]
+0x82275238 = { name = "sub_82275238" }
+0x82283828 = { name = "sub_82283828" }
+0x8231ED50 = { name = "sub_8231ED50" }
+0x823F87E8 = { name = "sub_823F87E8" }
+0x826DBCA8 = { name = "sub_826DBCA8" }
+0x82747210 = { name = "sub_82747210" }
+0x82788738 = { name = "sub_82788738" }
+0x8286A238 = { name = "sub_8286A238" }
+0x828C8398 = { name = "sub_828C8398" }
+0x82A65078 = { name = "sub_82A65078" }
+0x82A6D088 = { name = "sub_82A6D088" }
+0x82B0B858 = { name = "sub_82B0B858" }
+0x82B16DA0 = { name = "sub_82B16DA0" }
+0x82C40170 = { name = "sub_82C40170" }
+0x82CC2590 = { name = "sub_82CC2590" }
+0x82CC2F10 = { name = "sub_82CC2F10" }
+0x82CC2F18 = { name = "sub_82CC2F18" }
+0x82CC3548 = { name = "sub_82CC3548" }
+0x82D12398 = { name = "sub_82D12398" }
+0x82D12B20 = { name = "sub_82D12B20" }
+0x82DF5798 = { name = "sub_82DF5798" }
+0x82DF57A0 = { name = "sub_82DF57A0" }
+0x82DF57A8 = { name = "sub_82DF57A8" }

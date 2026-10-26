@@ -1,0 +1,45 @@
+# Game dump (BYO â€” never commit)
+game/
+*.iso
+*.xex
+*.xxx
+*.tfc
+*.xma
+*.bik
+*.bnk
+*.sav
+
+# Build / codegen outputs
+out/
+build/
+generated/default/
+*.log
+cmake_build*.log
+codegen_*.log
+
+# Launcher build
+launcher/bin/
+launcher/obj/
+launcher/.vs/
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Local SDK / tools live outside this repo
+tools/
+thirdparty/
+
+# Local scratch
+_*.bat
+_*.ps1
+first_launch_*.txt
+saw2_manifest.toml.bak
+# Local boot-logo scratch frames (from disc BIKs — do not ship)
+launcher/Assets/
