@@ -15,6 +15,7 @@ set(SAW2_SOURCES
     src/main.cpp
     src/stubs.cpp
     src/math_polyfill.cpp
+    src/ue3_framerate_unlock.cpp
 )
 
 if(WIN32)

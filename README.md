@@ -107,7 +107,8 @@ If the game dies with `[FATAL] Call to invalid or unregistered function at 0x...
 
 ## Known issues
 
-- **Black squares in some reflections** — likely a Xenos render-to-texture / cubemap resolve quirk (common UE3 + Xenos class). No GPU cvar flipped by default; investigating carefully so we do not regress playability.
+- **Squares in fog / mist** — mitigated by defaulting `use_fuzzy_alpha_epsilon` (override with `--no-use_fuzzy_alpha_epsilon` if needed).
+- **Black squares in some reflections** — likely a Xenos render-to-texture / cubemap resolve quirk (common UE3 + Xenos class); still under investigation.
 - **Movie subtitle tracks** — disc ships unsuffixed Movies/*.txt; localized probes like lvla_p_ITA.txt are hardlinked at launch so cutscene captions resolve.
 - **Missing `.xxx` probes** in the log (`Textures.xxx`, numeric hashes, etc.) are often optional UE3 companions — noisy, not always fatal.
 - **Achievement toast** — host dialog disabled on purpose; unlocks still save under `Documents\saw2\achievements`.

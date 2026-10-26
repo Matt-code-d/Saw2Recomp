@@ -207,5 +207,12 @@
       <Setter Property="FontSize" Value="12"/>
       <Setter Property="Margin" Value="0,0,0,4"/>
     </Style>
+
+    <Style x:Key="SectionHead" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource Bone}"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Margin" Value="0,18,0,8"/>
+    </Style>
   </Application.Resources>
 </Application>

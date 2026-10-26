@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Saw2Launcher.Services;
 
 namespace Saw2Launcher.Models;
 
@@ -42,6 +43,8 @@ public sealed class LauncherSettings
     public bool MnkMouse { get; set; } = true;
     public double MnkSensitivity { get; set; } = 1.0;
     public bool GuideButton { get; set; } = false;
+    /// <summary>ReXGlue keybind_* → key name(s). Empty map uses catalog defaults when M&amp;K is on.</summary>
+    public Dictionary<string, string> Keybinds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     // Advanced
     public bool SkipBootLogos { get; set; } = false;
@@ -106,6 +109,9 @@ public sealed class LauncherSettings
         args.Add(PresentLetterbox ? "--present_letterbox" : "--no-present_letterbox");
         args.Add(PresentDither ? "--present_dither" : "--no-present_dither");
         args.Add($"--present_effect={PresentEffect}");
+        // Soft alpha test for fog/particle quads (Xenos common square artifact).
+        // Override with ExtraArgs: --no-use_fuzzy_alpha_epsilon
+        args.Add("--use_fuzzy_alpha_epsilon");
 
         var effect = PresentEffect.Trim().ToLowerInvariant();
         if (effect is "fsr" or "fsr2" or "fsr3")
@@ -124,6 +130,17 @@ public sealed class LauncherSettings
         args.Add(MnkMouse ? "--mnk_mouse" : "--no-mnk_mouse");
         args.Add($"--mnk_sensitivity={MnkSensitivity}");
         args.Add(GuideButton ? "--guide_button" : "--no-guide_button");
+        if (MnkMode)
+        {
+            var map = KeybindCatalog.DefaultMap();
+            foreach (var kv in Keybinds)
+            {
+                if (!string.IsNullOrWhiteSpace(kv.Value))
+                    map[kv.Key] = kv.Value.Trim();
+            }
+            foreach (var kv in map)
+                args.Add($"--{kv.Key}={kv.Value}");
+        }
         args.Add($"--log_level={LogLevel}");
         if (VerboseLog) args.Add("--verbose");
         if (WriteLogFile)

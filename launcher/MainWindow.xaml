@@ -44,15 +44,17 @@
         <StackPanel DockPanel.Dock="Top">
           <TextBlock x:Name="LblPlayTitle" Style="{StaticResource SectionTitle}" Text="Play"/>
           <TextBlock x:Name="LblPlaySub" Style="{StaticResource SectionSub}"
-                     Text="Starts the RelWithDebInfo recomp with the settings below. Your ISO dump stays local."/>
+                     Text="Launch the game with your current settings. Install from ISO first if the game folder is empty."/>
         </StackPanel>
         <StackPanel VerticalAlignment="Bottom">
           <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="18" Margin="0,0,0,18">
             <StackPanel>
-              <TextBlock x:Name="LblExe" Style="{StaticResource FieldLabel}" Text="EXECUTABLE"/>
+              <TextBlock x:Name="LblExe" Style="{StaticResource FieldLabel}" Text="GAME BINARY"/>
               <TextBlock x:Name="TxtExe" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource Bone}"/>
-              <TextBlock x:Name="LblGameData" Style="{StaticResource FieldLabel}" Text="GAME DATA" Margin="0,12,0,4"/>
+              <TextBlock x:Name="LblGameData" Style="{StaticResource FieldLabel}" Text="INSTALLED GAME FILES" Margin="0,12,0,4"/>
               <TextBlock x:Name="TxtGame" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource Bone}"/>
+              <TextBlock x:Name="LblPlayTip" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,14,0,0" TextWrapping="Wrap"
+                         Text="Tip: set language, video and controls in the other tabs, then press Play. Settings are saved automatically when you launch."/>
             </StackPanel>
           </Border>
           <StackPanel Orientation="Horizontal">
@@ -97,8 +99,9 @@
       <ScrollViewer x:Name="PanelVideo" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
         <StackPanel>
           <TextBlock x:Name="LblVideoTitle" Style="{StaticResource SectionTitle}" Text="Video"/>
-          <TextBlock x:Name="LblVideoSub" Style="{StaticResource SectionSub}" Text="Display, sync, FPS target and upscaling passed to ReXGlue."/>
+          <TextBlock x:Name="LblVideoSub" Style="{StaticResource SectionSub}" Text="Screen size, frame rate and image scaling."/>
 
+          <TextBlock x:Name="LblDisplayHead" Style="{StaticResource SectionHead}" Text="DISPLAY" Margin="0,0,0,8"/>
           <TextBlock x:Name="LblResolution" Style="{StaticResource FieldLabel}" Text="RESOLUTION PRESET"/>
           <ComboBox x:Name="CmbResolution" Margin="0,0,0,14">
             <ComboBoxItem Content="720p"/>
@@ -134,30 +137,25 @@
           <TextBlock x:Name="LblMonitor" Style="{StaticResource FieldLabel}" Text="MONITOR INDEX" Margin="0,12,0,4"/>
           <TextBox x:Name="TxtMonitor" Text="0" Width="80" HorizontalAlignment="Left"/>
 
-          <TextBlock x:Name="LblVsyncSection" Style="{StaticResource FieldLabel}" Text="V-SYNC / FRAME PACING" Margin="0,16,0,4"/>
-          <CheckBox x:Name="ChkVSync" Content="V-Sync" IsChecked="True"/>
-          <CheckBox x:Name="ChkTearing" Content="Allow VRR / tearing (D3D12)"/>
-          <CheckBox x:Name="ChkClockNoScale" Content="Unlock guest clock (no frame scaling)"/>
-
-          <TextBlock x:Name="LblFps" Style="{StaticResource FieldLabel}" Text="FPS TARGET" Margin="0,16,0,4"/>
+          <TextBlock x:Name="LblVsyncSection" Style="{StaticResource SectionHead}" Text="FRAME RATE"/>
+          <TextBlock x:Name="LblFps" Style="{StaticResource FieldLabel}" Text="TARGET FPS"/>
           <ComboBox x:Name="CmbFpsPreset" Width="220" HorizontalAlignment="Left" SelectionChanged="FpsPreset_Changed">
             <ComboBoxItem Content="30" Tag="30"/>
             <ComboBoxItem Content="60" Tag="60" IsSelected="True"/>
-            <ComboBoxItem Content="120" Tag="120"/>
-            <ComboBoxItem Content="144" Tag="144"/>
-            <ComboBoxItem Content="165" Tag="165"/>
-            <ComboBoxItem Content="240" Tag="240"/>
-            <ComboBoxItem x:Name="ItemFpsUnlimited" Content="Unlimited" Tag="Unlimited"/>
-            <ComboBoxItem x:Name="ItemFpsCustom" Content="Custom" Tag="Custom"/>
           </ComboBox>
           <TextBlock x:Name="LblFpsHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,8" TextWrapping="Wrap"
-                     Text="Maps to guest video_mode_refresh_rate. Unlimited uses 0 + unlocked clock."/>
-          <StackPanel x:Name="PanelCustomFps" Orientation="Horizontal" Visibility="Collapsed" Margin="0,0,0,8">
-            <TextBlock x:Name="LblCustomHz" Style="{StaticResource FieldLabel}" Text="CUSTOM Hz" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox x:Name="TxtRefresh" Text="60" Width="80"/>
+                     Text="Saw II game logic is tied to frame pacing. Use 30 for the original feel, or 60 for smoother play — higher rates make the game run fast."/>
+
+          <CheckBox x:Name="ChkVSync" Content="V-Sync" IsChecked="True"/>
+          <CheckBox x:Name="ChkTearing" Content="Allow VRR / tearing (D3D12)"/>
+          <!-- Kept for ExtraArgs / power users; not needed for 30/60. -->
+          <CheckBox x:Name="ChkClockNoScale" Content="Unlock guest clock" Visibility="Collapsed"/>
+          <!-- Hidden leftovers referenced by code paths that migrate old settings. -->
+          <StackPanel x:Name="PanelCustomFps" Visibility="Collapsed">
+            <TextBox x:Name="TxtRefresh" Text="60"/>
           </StackPanel>
 
-          <TextBlock x:Name="LblUpscale" Style="{StaticResource FieldLabel}" Text="UPSCALING / PRESENT EFFECT" Margin="0,12,0,4"/>
+          <TextBlock x:Name="LblUpscale" Style="{StaticResource SectionHead}" Text="UPSCALING"/>
           <ComboBox x:Name="CmbPresentEffect" Width="260" HorizontalAlignment="Left" SelectionChanged="PresentEffect_Changed">
             <ComboBoxItem Content="bilinear" IsSelected="True"/>
             <ComboBoxItem Content="cas"/>
@@ -166,7 +164,7 @@
             <ComboBoxItem Content="fsr3"/>
           </ComboBox>
           <TextBlock x:Name="TxtUpscaleNote" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,8" TextWrapping="Wrap"
-                     Text="ReXGlue 0.10.0 ships bilinear reliably. FSR/CAS need a FidelityFX-enabled xenos build — values are still passed for forward-compat. DLSS is not available on the Xenos path."/>
+                     Text="Bilinear is the reliable option. FSR/CAS need a FidelityFX-enabled build — values are still passed for forward-compat."/>
 
           <StackPanel x:Name="PanelFsr" Visibility="Collapsed" Margin="0,4,0,0">
             <TextBlock x:Name="LblFsrQuality" Style="{StaticResource FieldLabel}" Text="FSR QUALITY MODE"/>
@@ -196,28 +194,43 @@
 
       <StackPanel x:Name="PanelAudio" Visibility="Collapsed">
         <TextBlock x:Name="LblAudioTitle" Style="{StaticResource SectionTitle}" Text="Audio"/>
-        <TextBlock x:Name="LblAudioSub" Style="{StaticResource SectionSub}" Text="Host audio path (SDL)."/>
+        <TextBlock x:Name="LblAudioSub" Style="{StaticResource SectionSub}" Text="Volume and buffering for the PC audio path."/>
         <CheckBox x:Name="ChkMute" Content="Mute"/>
-        <TextBlock x:Name="LblAudioQueue" Style="{StaticResource FieldLabel}" Text="MAX QUEUED FRAMES (4–64)" Margin="0,12,0,4"/>
+        <TextBlock x:Name="LblAudioQueue" Style="{StaticResource FieldLabel}" Text="BUFFER (QUEUED FRAMES, 4–64)" Margin="0,12,0,4"/>
         <Slider x:Name="SldAudioQ" Minimum="4" Maximum="64" Value="8" TickFrequency="1" IsSnapToTickEnabled="True" Width="280" HorizontalAlignment="Left"/>
         <TextBlock x:Name="TxtAudioQ" Foreground="{StaticResource Mute}" Margin="0,4,0,0"/>
+        <TextBlock x:Name="LblAudioHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"
+                   Text="Raise the buffer if you hear crackling; lower it for less latency."/>
       </StackPanel>
 
-      <StackPanel x:Name="PanelInput" Visibility="Collapsed">
-        <TextBlock x:Name="LblInputTitle" Style="{StaticResource SectionTitle}" Text="Input"/>
-        <TextBlock x:Name="LblInputSub" Style="{StaticResource SectionSub}" Text="Controller and mouse/keyboard emulation."/>
-        <TextBlock x:Name="LblInputBackend" Style="{StaticResource FieldLabel}" Text="BACKEND"/>
-        <ComboBox x:Name="CmbInputBackend" Width="200" HorizontalAlignment="Left" Margin="0,0,0,12">
-          <ComboBoxItem Content="sdl" IsSelected="True"/>
-          <ComboBoxItem Content="xinput"/>
-        </ComboBox>
-        <CheckBox x:Name="ChkMnk" Content="Enable mouse + keyboard (M&amp;K mode)"/>
-        <CheckBox x:Name="ChkMnkMouse" Content="Mouse drives right stick" IsChecked="True"/>
-        <CheckBox x:Name="ChkGuide" Content="Pass through guide button"/>
-        <TextBlock x:Name="LblSens" Style="{StaticResource FieldLabel}" Text="MOUSE SENSITIVITY" Margin="0,12,0,4"/>
-        <Slider x:Name="SldSens" Minimum="0.1" Maximum="5" Value="1" TickFrequency="0.1" Width="280" HorizontalAlignment="Left"/>
-        <TextBlock x:Name="TxtSens" Foreground="{StaticResource Mute}"/>
-      </StackPanel>
+      <ScrollViewer x:Name="PanelInput" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+          <TextBlock x:Name="LblInputTitle" Style="{StaticResource SectionTitle}" Text="Controls"/>
+          <TextBlock x:Name="LblInputSub" Style="{StaticResource SectionSub}"
+                     Text="Use a pad, or turn on mouse + keyboard and remap keys to Xbox buttons."/>
+
+          <TextBlock x:Name="LblInputDeviceHead" Style="{StaticResource SectionHead}" Text="DEVICE" Margin="0,0,0,8"/>
+          <TextBlock x:Name="LblInputBackend" Style="{StaticResource FieldLabel}" Text="CONTROLLER BACKEND"/>
+          <ComboBox x:Name="CmbInputBackend" Width="200" HorizontalAlignment="Left" Margin="0,0,0,12">
+            <ComboBoxItem Content="sdl" IsSelected="True"/>
+            <ComboBoxItem Content="xinput"/>
+          </ComboBox>
+          <CheckBox x:Name="ChkMnk" Content="Enable mouse + keyboard" Checked="Mnk_Changed" Unchecked="Mnk_Changed"/>
+          <CheckBox x:Name="ChkMnkMouse" Content="Mouse aims (right stick)" IsChecked="True"/>
+          <CheckBox x:Name="ChkGuide" Content="Pass through Guide / Xbox button"/>
+          <TextBlock x:Name="LblSens" Style="{StaticResource FieldLabel}" Text="MOUSE SENSITIVITY" Margin="0,12,0,4"/>
+          <Slider x:Name="SldSens" Minimum="0.1" Maximum="5" Value="1" TickFrequency="0.1" Width="280" HorizontalAlignment="Left"/>
+          <TextBlock x:Name="TxtSens" Foreground="{StaticResource Mute}"/>
+
+          <TextBlock x:Name="LblKeybindsHead" Style="{StaticResource SectionHead}" Text="KEYBOARD MAP"/>
+          <TextBlock x:Name="LblKeybindsHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap"
+                     Text="Only used when mouse + keyboard is enabled. Comma-separated keys allowed (example: Space,E). Click a field and press a key to capture."/>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Button x:Name="BtnResetBinds" Style="{StaticResource GhostBtn}" Content="Reset to defaults" Padding="14,8" Click="ResetBinds_Click"/>
+          </StackPanel>
+          <StackPanel x:Name="PanelKeybinds"/>
+        </StackPanel>
+      </ScrollViewer>
 
       <StackPanel x:Name="PanelLanguage" Visibility="Collapsed">
         <TextBlock x:Name="LblLangTitle" Style="{StaticResource SectionTitle}" Text="Language"/>

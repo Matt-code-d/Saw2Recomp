@@ -18,6 +18,8 @@ public partial class MainWindow : Window
     private bool _uiReady;
     private LauncherLocale _l = LauncherLocale.En;
     private string _activePanel = "PLAY";
+    private readonly Dictionary<string, TextBox> _keybindBoxes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, TextBlock> _keybindLabels = new(StringComparer.OrdinalIgnoreCase);
 
     public MainWindow()
     {
@@ -51,6 +53,7 @@ public partial class MainWindow : Window
         SldFsrSharp.ValueChanged += (_, _) => TxtFsrSharp.Text = SldFsrSharp.Value.ToString("0.00");
         SldCasSharp.ValueChanged += (_, _) => TxtCasSharp.Text = SldCasSharp.Value.ToString("0.00");
 
+        BuildKeybindUi();
         ApplyDefaultsIfEmpty();
         try { BootLogoSkip.Restore(_settings.GameDataRoot); } catch { /* ignore */ }
         LoadUiFromSettings();
@@ -62,8 +65,96 @@ public partial class MainWindow : Window
         TxtCasSharp.Text = SldCasSharp.Value.ToString("0.00");
         UpdateFpsUi();
         UpdateUpscaleUi();
+        UpdateKeybindPanelEnabled();
         ShowPanel("PLAY");
         _uiReady = true;
+    }
+
+    private void BuildKeybindUi()
+    {
+        PanelKeybinds.Children.Clear();
+        _keybindBoxes.Clear();
+        _keybindLabels.Clear();
+        foreach (var entry in KeybindCatalog.All)
+        {
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(220) });
+            var label = new TextBlock
+            {
+                Style = (Style)FindResource("FieldLabel"),
+                VerticalAlignment = VerticalAlignment.Center,
+                Text = entry.Cvar,
+            };
+            var box = new TextBox { Text = entry.DefaultKeys, Tag = entry.Cvar };
+            box.PreviewKeyDown += KeybindBox_PreviewKeyDown;
+            Grid.SetColumn(label, 0);
+            Grid.SetColumn(box, 1);
+            row.Children.Add(label);
+            row.Children.Add(box);
+            PanelKeybinds.Children.Add(row);
+            _keybindLabels[entry.Cvar] = label;
+            _keybindBoxes[entry.Cvar] = box;
+        }
+    }
+
+    private void KeybindBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (sender is not TextBox box) return;
+        // Allow editing modifiers / navigation only when capturing a bind.
+        if (e.Key is System.Windows.Input.Key.Tab) return;
+        e.Handled = true;
+        var key = e.Key == System.Windows.Input.Key.System ? e.SystemKey : e.Key;
+        if (key is System.Windows.Input.Key.LeftCtrl or System.Windows.Input.Key.RightCtrl
+            or System.Windows.Input.Key.LeftAlt or System.Windows.Input.Key.RightAlt
+            or System.Windows.Input.Key.LeftShift or System.Windows.Input.Key.RightShift
+            or System.Windows.Input.Key.LWin or System.Windows.Input.Key.RWin)
+            return;
+        box.Text = FormatCaptureKey(key);
+    }
+
+    private static string FormatCaptureKey(System.Windows.Input.Key key) => key switch
+    {
+        System.Windows.Input.Key.Space => "Space",
+        System.Windows.Input.Key.Return => "Enter",
+        System.Windows.Input.Key.Escape => "Escape",
+        System.Windows.Input.Key.Back => "Backspace",
+        System.Windows.Input.Key.Left => "Left",
+        System.Windows.Input.Key.Right => "Right",
+        System.Windows.Input.Key.Up => "Up",
+        System.Windows.Input.Key.Down => "Down",
+        System.Windows.Input.Key.LeftCtrl => "LeftCtrl",
+        System.Windows.Input.Key.RightCtrl => "RightCtrl",
+        System.Windows.Input.Key.OemSemicolon => "Semicolon",
+        System.Windows.Input.Key.OemQuotes => "Quote",
+        System.Windows.Input.Key.OemComma => "Comma",
+        System.Windows.Input.Key.OemPeriod => "Period",
+        System.Windows.Input.Key.OemMinus => "Minus",
+        System.Windows.Input.Key.OemPlus => "Plus",
+        _ => key.ToString(),
+    };
+
+    private void UpdateKeybindPanelEnabled()
+    {
+        var on = ChkMnk.IsChecked == true;
+        PanelKeybinds.IsEnabled = on;
+        BtnResetBinds.IsEnabled = on;
+        PanelKeybinds.Opacity = on ? 1.0 : 0.45;
+    }
+
+    private void Mnk_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_uiReady) return;
+        UpdateKeybindPanelEnabled();
+    }
+
+    private void ResetBinds_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var entry in KeybindCatalog.All)
+        {
+            if (_keybindBoxes.TryGetValue(entry.Cvar, out var box))
+                box.Text = entry.DefaultKeys;
+        }
     }
 
     private void ApplyDefaultsIfEmpty()
@@ -98,6 +189,7 @@ public partial class MainWindow : Window
         LblPlaySub.Text = _l["play.sub"];
         LblExe.Text = _l["play.exe"];
         LblGameData.Text = _l["play.data"];
+        LblPlayTip.Text = _l["play.tip"];
         BtnPlay.Content = _l["play.btn"];
         BtnOpenFolder.Content = _l["play.open"];
         BtnSave.Content = _l["play.save"];
@@ -112,6 +204,7 @@ public partial class MainWindow : Window
 
         LblVideoTitle.Text = _l["video.title"];
         LblVideoSub.Text = _l["video.sub"];
+        LblDisplayHead.Text = _l["video.display_head"];
         LblResolution.Text = _l["video.resolution"];
         LblWinW.Text = _l["video.width"];
         LblWinH.Text = _l["video.height"];
@@ -125,9 +218,6 @@ public partial class MainWindow : Window
         ChkClockNoScale.Content = _l["video.clock"];
         LblFps.Text = _l["video.fps"];
         LblFpsHint.Text = _l["video.fps_hint"];
-        ItemFpsUnlimited.Content = _l["video.fps_unlimited"];
-        ItemFpsCustom.Content = _l["video.fps_custom"];
-        LblCustomHz.Text = _l["video.custom_hz"];
         LblUpscale.Text = _l["video.upscale"];
         TxtUpscaleNote.Text = _l["video.upscale_note"];
         LblFsrQuality.Text = _l["video.fsr_quality"];
@@ -139,15 +229,25 @@ public partial class MainWindow : Window
         LblAudioSub.Text = _l["audio.sub"];
         ChkMute.Content = _l["audio.mute"];
         LblAudioQueue.Text = _l["audio.queue"];
+        LblAudioHint.Text = _l["audio.hint"];
         RefreshAudioFramesLabel();
 
         LblInputTitle.Text = _l["input.title"];
         LblInputSub.Text = _l["input.sub"];
+        LblInputDeviceHead.Text = _l["input.device_head"];
         LblInputBackend.Text = _l["input.backend"];
         ChkMnk.Content = _l["input.mnk"];
         ChkMnkMouse.Content = _l["input.mnk_mouse"];
         ChkGuide.Content = _l["input.guide"];
         LblSens.Text = _l["input.sens"];
+        LblKeybindsHead.Text = _l["input.keybinds_head"];
+        LblKeybindsHint.Text = _l["input.keybinds_hint"];
+        BtnResetBinds.Content = _l["input.reset_binds"];
+        foreach (var entry in KeybindCatalog.All)
+        {
+            if (_keybindLabels.TryGetValue(entry.Cvar, out var label))
+                label.Text = _l[entry.LabelKey];
+        }
 
         LblLangTitle.Text = _l["lang.title"];
         LblLangSub.Text = _l["lang.sub"];
@@ -216,8 +316,12 @@ public partial class MainWindow : Window
         ChkVSync.IsChecked = _settings.VSync;
         ChkTearing.IsChecked = _settings.AllowTearing;
         ChkClockNoScale.IsChecked = _settings.ClockNoScaling;
-        SelectCombo(CmbFpsPreset, string.IsNullOrWhiteSpace(_settings.FpsPreset) ? "60" : _settings.FpsPreset);
-        TxtRefresh.Text = _settings.RefreshRate.ToString("0.###", CultureInfo.InvariantCulture);
+        // Only 30 / 60 — higher rates make UE3 physics/animation look accelerated.
+        var fpsPreset = string.IsNullOrWhiteSpace(_settings.FpsPreset) ? "60" : _settings.FpsPreset;
+        if (fpsPreset is not ("30" or "60"))
+            fpsPreset = _settings.RefreshRate <= 45 ? "30" : "60";
+        SelectCombo(CmbFpsPreset, fpsPreset);
+        TxtRefresh.Text = fpsPreset;
         SelectCombo(CmbPresentEffect, _settings.PresentEffect);
         SelectCombo(CmbFsrQuality, _settings.FsrQualityMode);
         SldFsrSharp.Value = Math.Clamp(_settings.FsrSharpnessReduction, 0, 1);
@@ -232,6 +336,13 @@ public partial class MainWindow : Window
         ChkMnkMouse.IsChecked = _settings.MnkMouse;
         ChkGuide.IsChecked = _settings.GuideButton;
         SldSens.Value = _settings.MnkSensitivity;
+        foreach (var entry in KeybindCatalog.All)
+        {
+            if (!_keybindBoxes.TryGetValue(entry.Cvar, out var box)) continue;
+            box.Text = _settings.Keybinds.TryGetValue(entry.Cvar, out var saved) && !string.IsNullOrWhiteSpace(saved)
+                ? saved
+                : entry.DefaultKeys;
+        }
 
         ChkSkipBoot.IsChecked = _settings.SkipBootLogos;
         SelectCombo(CmbLogLevel, _settings.LogLevel);
@@ -272,6 +383,14 @@ public partial class MainWindow : Window
         _settings.MnkMouse = ChkMnkMouse.IsChecked == true;
         _settings.GuideButton = ChkGuide.IsChecked == true;
         _settings.MnkSensitivity = SldSens.Value;
+        _settings.Keybinds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in KeybindCatalog.All)
+        {
+            if (!_keybindBoxes.TryGetValue(entry.Cvar, out var box)) continue;
+            var val = box.Text.Trim();
+            if (val.Length > 0)
+                _settings.Keybinds[entry.Cvar] = val;
+        }
 
         if (CmbLanguage.SelectedItem is DetectedLanguage lang)
             _settings.UserLanguage = lang.Id;
@@ -289,33 +408,22 @@ public partial class MainWindow : Window
     private void ApplyFpsPresetToSettings()
     {
         var preset = ComboValue(CmbFpsPreset);
-        switch (preset.ToLowerInvariant())
-        {
-            case "unlimited":
-                _settings.RefreshRate = 0;
-                _settings.ClockNoScaling = true;
-                ChkClockNoScale.IsChecked = true;
-                break;
-            case "custom":
-                if (!double.TryParse(TxtRefresh.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var custom)
-                    && !double.TryParse(TxtRefresh.Text, out custom))
-                    custom = 60;
-                _settings.RefreshRate = custom > 0 ? custom : 60;
-                break;
-            default:
-                if (double.TryParse(preset, NumberStyles.Float, CultureInfo.InvariantCulture, out var hz))
-                    _settings.RefreshRate = hz;
-                else
-                    _settings.RefreshRate = 60;
-                break;
-        }
+        _settings.RefreshRate = preset == "30" ? 30 : 60;
+        _settings.FpsPreset = _settings.RefreshRate <= 45 ? "30" : "60";
+        // Keep guest clock scaled — uncapped rates make Saw II run fast.
+        _settings.ClockNoScaling = false;
+        ChkClockNoScale.IsChecked = false;
+    }
+
+    private void FpsPreset_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiReady) return;
+        ApplyFpsPresetToSettings();
     }
 
     private void UpdateFpsUi()
     {
-        PanelCustomFps.Visibility = string.Equals(ComboValue(CmbFpsPreset), "Custom", StringComparison.OrdinalIgnoreCase)
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        PanelCustomFps.Visibility = Visibility.Collapsed;
     }
 
     private void UpdateUpscaleUi()
@@ -325,12 +433,6 @@ public partial class MainWindow : Window
         var isCas = effect is "cas" || isFsr;
         PanelFsr.Visibility = isFsr ? Visibility.Visible : Visibility.Collapsed;
         PanelCas.Visibility = isCas ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    private void FpsPreset_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_uiReady) return;
-        UpdateFpsUi();
     }
 
     private void PresentEffect_Changed(object sender, SelectionChangedEventArgs e)
