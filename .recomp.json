@@ -4,10 +4,10 @@
   "wikidata": "Q392689",
   "system": "Xbox 360",
   "type": "recomp",
-  "original": {
-    "region": "USA",
-    "serial": "4B4E0822"
-  },
+  "original": [
+    { "region": "USA", "serial": "4B4E0822" },
+    { "region": "Europe", "serial": "4B4E0822" }
+  ],
   "project": "Saw2Recomp",
   "status": "playable",
   "targets": ["Windows"],
@@ -30,5 +30,5 @@
     "Graphics quirks / reflections",
     "Linux / other targets"
   ],
-  "notes": "Unofficial PC recomp with WPF launcher. Bring your own legally owned dump. Public RelWithDebInfo builds on GitHub Releases."
+  "notes": "Unofficial PC recomp with WPF launcher. Title ID 4B4E0822; disc language packs (EN/DE/FR/ES/IT) detected at install. Bring your own legally owned dump. Public RelWithDebInfo builds on GitHub Releases."
 }
