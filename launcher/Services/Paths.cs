@@ -29,16 +29,19 @@ public static class Paths
 
     public static string FindGameExe(string projectRoot)
     {
-        // Prefer sibling saw2.exe when the launcher is published into the build/output folder.
+        // Never pick Debug for play — rexgpu-xenosd.dll asserts in the shader translator.
         string[] candidates =
         [
             Path.Combine(AppContext.BaseDirectory, "saw2.exe"),
             Path.Combine(projectRoot, "out", "build", "win-amd64-relwithdebinfo", "saw2.exe"),
             Path.Combine(projectRoot, "out", "build", "win-amd64-release", "saw2.exe"),
-            Path.Combine(projectRoot, "out", "build", "win-amd64-debug", "saw2.exe"),
             Path.Combine(projectRoot, "bin", "saw2.exe"),
         ];
-        return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
+        var hit = candidates.FirstOrDefault(File.Exists);
+        if (hit != null) return hit;
+
+        // Last resort: Debug exists but we refuse to auto-select it.
+        return candidates[0];
     }
 
     public static string FindExtractXiso(string projectRoot)

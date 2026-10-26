@@ -163,7 +163,12 @@ public partial class MainWindow : Window
             _settings.InstallRoot = _projectRoot;
         if (string.IsNullOrWhiteSpace(_settings.GameDataRoot))
             _settings.GameDataRoot = Paths.DefaultGameRoot(_projectRoot);
-        if (string.IsNullOrWhiteSpace(_settings.GameExePath) || !File.Exists(_settings.GameExePath))
+        // Never keep a Debug exe path — xenosd.dll assert-storms in translator.cpp.
+        var exe = _settings.GameExePath ?? "";
+        var exeIsDebug = exe.Contains("win-amd64-debug", StringComparison.OrdinalIgnoreCase)
+                         || exe.Contains($"{Path.DirectorySeparatorChar}debug{Path.DirectorySeparatorChar}",
+                             StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe) || exeIsDebug)
             _settings.GameExePath = Paths.FindGameExe(_projectRoot);
     }
 

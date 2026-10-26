@@ -58,24 +58,34 @@ public static class GameProcess
         var sdkBin = Path.GetFullPath(Path.Combine(projectRoot, "..", "tools", "rexglue-sdk-bin", "win-amd64", "bin"));
         if (!Directory.Exists(sdkBin)) return;
 
-        string[] pairs =
+        // RelWithDebInfo only — Debug (xenosd) assert-storms on UE3 fetch strides.
+        string[] required =
         [
             "rexruntimerd.dll",
             "rexgpu-xenosrd.dll",
             "TracyClientrd.dll",
-            "rexruntimed.dll",
-            "rexgpu-xenosd.dll",
-            "TracyClientd.dll",
-            "rexruntime.dll",
-            "rexgpu-xenos.dll",
-            "TracyClient.dll",
         ];
-        foreach (var name in pairs)
+        foreach (var name in required)
         {
             var src = Path.Combine(sdkBin, name);
             var dst = Path.Combine(exeDir, name);
-            if (File.Exists(src) && !File.Exists(dst))
-                File.Copy(src, dst, true);
+            if (File.Exists(src))
+                File.Copy(src, dst, overwrite: true);
+        }
+
+        // Kill Debug/Release GPU runtimes that shadow the rd DLL via PATH/loader order.
+        foreach (var bad in new[]
+                 {
+                     "rexgpu-xenosd.dll", "rexruntimed.dll", "TracyClientd.dll",
+                     "rexgpu-xenos.dll", "rexruntime.dll", "TracyClient.dll",
+                 })
+        {
+            var p = Path.Combine(exeDir, bad);
+            if (File.Exists(p))
+            {
+                try { File.Delete(p); }
+                catch { /* locked — ignore */ }
+            }
         }
     }
 }

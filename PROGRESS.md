@@ -12,7 +12,7 @@ Port by **Matteo Santoro**. Runtime: ReXGlue **v0.10.0**.
 | Play (RelWithDebInfo) | Working — launcher + long sessions |
 | Input heap race | Mitigated — mutex on XamInput wrappers |
 | Achievement toast | Disabled (unlocks still persist) |
-| Graphics polish | Open — some reflections show black squares |
+| Graphics polish | Open — puddle/reflection black squares; trying `readback_resolve=fast` |
 
 ## Bring-up loop
 

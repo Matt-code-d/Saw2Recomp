@@ -1,0 +1,5 @@
+Saw2Recomp 0.1.3 — build stamp
+==============================
+Config: RelWithDebInfo (win-amd64)
+Runtime: rexruntimerd.dll / rexgpu-xenosrd.dll / TracyClientrd.dll
+Do NOT replace with Debug (*d.dll) — assert storms in shader translator.

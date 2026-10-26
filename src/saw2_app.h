@@ -36,6 +36,21 @@ class Saw2App : public rex::ReXApp {
     if (!rex::cvar::HasNonDefaultValue("use_fuzzy_alpha_epsilon")) {
       rex::cvar::SetFlagByName("use_fuzzy_alpha_epsilon", "true");
     }
+
+    // UE3 puddles: rov + invalid fetch only. Skip readback/gamma/clear_memory —
+    // those hitch when scene captures run. Present FSR/CAS/bilinear stay untouched.
+    if (!rex::cvar::HasNonDefaultValue("render_target_path_d3d12")) {
+      rex::cvar::SetFlagByName("render_target_path_d3d12", "rov");
+    }
+    if (!rex::cvar::HasNonDefaultValue("gpu_allow_invalid_fetch_constants")) {
+      rex::cvar::SetFlagByName("gpu_allow_invalid_fetch_constants", "true");
+    }
+    if (!rex::cvar::HasNonDefaultValue("async_shader_compilation")) {
+      rex::cvar::SetFlagByName("async_shader_compilation", "true");
+    }
+    if (!rex::cvar::HasNonDefaultValue("texture_cache_memory_limit_render_to_texture")) {
+      rex::cvar::SetFlagByName("texture_cache_memory_limit_render_to_texture", "192");
+    }
   }
 
   void OnCreateDialogs(rex::ui::ImGuiDrawer* drawer) override {

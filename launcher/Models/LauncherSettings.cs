@@ -113,6 +113,16 @@ public sealed class LauncherSettings
         // Override with ExtraArgs: --no-use_fuzzy_alpha_epsilon
         args.Add("--use_fuzzy_alpha_epsilon");
 
+        // Puddle/reflection fix — minimal set. rov is what actually clears the black
+        // squares; readback/gamma/clear_memory hitch near water and are omitted.
+        // Present upscaling (FSR/CAS/bilinear) is host-side and independent of this.
+        args.Add("--render_target_path_d3d12=rov");
+        args.Add("--gpu_allow_invalid_fetch_constants");
+        args.Add("--resolution_scale=1");
+        args.Add("--async_shader_compilation");
+        // Keep UE3 scene-capture RTTs resident (MB). Cuts thrash when looking at water.
+        args.Add("--texture_cache_memory_limit_render_to_texture=192");
+
         var effect = PresentEffect.Trim().ToLowerInvariant();
         if (effect is "fsr" or "fsr2" or "fsr3")
         {
