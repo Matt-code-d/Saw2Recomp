@@ -1,4 +1,6 @@
-# Saw II: Flesh & Blood — Recomp
+<p align="center">
+  <img src="logo.png" alt="Saw II: Flesh & Blood — Recomp" width="720">
+</p>
 
 Unofficial native PC port of **Saw II: Flesh & Blood** (Xbox 360) built with the [ReXGlue SDK](https://github.com/rexglue/rexglue-sdk) (v0.10.0).
 

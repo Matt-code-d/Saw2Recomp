@@ -8,12 +8,15 @@
     <AssemblyName>Saw2Launcher</AssemblyName>
     <RootNamespace>Saw2Launcher</RootNamespace>
     <Product>Saw II Flesh and Blood Launcher</Product>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System.IO" />
     <Using Include="System.Linq" />
     <Using Include="System.Threading" />
     <Using Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="..\logo.png" Link="Assets\logo.png" />
   </ItemGroup>
 </Project>

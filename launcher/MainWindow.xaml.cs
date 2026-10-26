@@ -86,8 +86,6 @@ public partial class MainWindow : Window
     private void ApplyLocale()
     {
         Title = _l["window.title"];
-        TxtBrandSub.Text = _l["brand.sub"];
-
         NavPlay.Content = _l["nav.play"];
         NavSetup.Content = _l["nav.setup"];
         NavVideo.Content = _l["nav.video"];
