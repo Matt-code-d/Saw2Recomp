@@ -41,5 +41,9 @@ _*.bat
 _*.ps1
 first_launch_*.txt
 saw2_manifest.toml.bak
-# Local boot-logo scratch frames (from disc BIKs — do not ship)
+# Local boot-logo scratch frames (from disc BIKs ? do not ship)
 launcher/Assets/
+
+# Release packages (upload via GitHub Releases, do not commit binaries)
+dist/*.zip
+dist/Saw2Recomp-*/

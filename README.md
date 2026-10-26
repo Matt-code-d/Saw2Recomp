@@ -24,14 +24,13 @@ See [PROGRESS.md](PROGRESS.md) for the bring-up log.
 
 ## Quick start (launcher)
 
-1. Install the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
-2. Build the game once (below) **or** use an already-built `saw2.exe`.
+1. Install the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (and the .NET 8 SDK if you build from source).
+2. Build the game once (below). CMake also publishes **`Saw2Launcher.exe` into the same folder as `saw2.exe`**.
 3. Put [extract-xiso](https://github.com/XboxDev/extract-xiso) at `../tools/extract-xiso/artifacts/extract-xiso.exe` (sibling of this repo), and the ReXGlue SDK at `../tools/rexglue-sdk-bin/win-amd64`.
-4. Run the launcher:
+4. Run the launcher from the build output (or `dotnet run` from `launcher/` while developing):
 
 ```powershell
-cd launcher
-dotnet run -c Release
+.\out\build\win-amd64-relwithdebinfo\Saw2Launcher.exe
 ```
 
 In the launcher:
@@ -84,7 +83,7 @@ cmake --preset win-amd64-relwithdebinfo -DCMAKE_PREFIX_PATH="..\tools\rexglue-sd
 cmake --build --preset win-amd64-relwithdebinfo
 ```
 
-Binary: `out/build/win-amd64-relwithdebinfo/saw2.exe`
+Binaries (same folder): `out/build/win-amd64-relwithdebinfo/saw2.exe` and `Saw2Launcher.exe`
 
 If the game dies with `[FATAL] Call to invalid or unregistered function at 0x........`, add that address to `config/functions.toml`, re-run codegen, rebuild. That is the normal bring-up loop for ReXGlue titles.
 

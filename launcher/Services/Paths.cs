@@ -16,9 +16,12 @@ public static class Paths
                 return candidate;
         }
 
-        // Fallback: assume packaged next to game/
-        return Directory.GetParent(AppContext.BaseDirectory)?.FullName
-               ?? AppContext.BaseDirectory;
+        // Packaged release: launcher + saw2.exe in the same folder (game/ created by Setup).
+        var baseDir = Path.GetFullPath(AppContext.BaseDirectory);
+        if (File.Exists(Path.Combine(baseDir, "saw2.exe")))
+            return baseDir;
+
+        return Directory.GetParent(baseDir)?.FullName ?? baseDir;
     }
 
     public static string DefaultGameRoot(string projectRoot) =>
@@ -26,13 +29,14 @@ public static class Paths
 
     public static string FindGameExe(string projectRoot)
     {
+        // Prefer sibling saw2.exe when the launcher is published into the build/output folder.
         string[] candidates =
         [
+            Path.Combine(AppContext.BaseDirectory, "saw2.exe"),
             Path.Combine(projectRoot, "out", "build", "win-amd64-relwithdebinfo", "saw2.exe"),
             Path.Combine(projectRoot, "out", "build", "win-amd64-release", "saw2.exe"),
             Path.Combine(projectRoot, "out", "build", "win-amd64-debug", "saw2.exe"),
             Path.Combine(projectRoot, "bin", "saw2.exe"),
-            Path.Combine(AppContext.BaseDirectory, "saw2.exe"),
         ];
         return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
     }
