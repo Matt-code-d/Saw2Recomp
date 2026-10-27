@@ -1,6 +1,6 @@
 # Progress — Saw II: Flesh & Blood recomp
 
-Port by **Matteo Santoro**. Runtime: ReXGlue **v0.10.0**.
+Port by **[Matt-code-d](https://github.com/Matt-code-d)**. Runtime: ReXGlue **v0.10.0**.
 
 ## Status
 

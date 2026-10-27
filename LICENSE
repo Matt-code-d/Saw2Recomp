@@ -1,0 +1,40 @@
+MIT License
+
+Copyright (c) 2026 Matt-code-d
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+------------------------------------------------------------------------------
+SCOPE (not part of the MIT grant above — clarification only)
+
+This MIT license covers only the original work in this repository authored for
+Saw2Recomp (for example: project glue, launcher, configs, documentation, and
+other files committed here that are not third-party).
+
+It does NOT cover, and does NOT grant any rights to:
+
+  • Saw II: Flesh & Blood (or any other commercial game) — including disc
+    images, XEX binaries, cooked assets, audio, video, or other game data.
+    Those remain property of their respective rights holders (Konami, Zombie
+    Studios, and others). Bring your own legally owned dump.
+
+  • Third-party libraries, SDKs, and tools used by or alongside this project
+    (including but not limited to ReXGlue / Xenia-derived components,
+    extract-xiso, and their dependencies). Those keep their own licenses;
+    see their upstream projects and any bundled license notices.

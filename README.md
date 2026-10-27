@@ -8,7 +8,7 @@ This is a **static recompilation**, not an emulator. The PowerPC code inside `De
 
 > **Bring your own dump.** This repository does **not** ship game files, ISOs, or XEXes. You need a legally owned Xbox 360 copy.
 
-**Author:** Matteo Santoro
+**Author:** [Matt-code-d](https://github.com/Matt-code-d)
 
 Title ID: `4B4E0822` · Engine: Unreal Engine 3 (`SAW2GAME/CookedXenon`)
 
@@ -135,9 +135,16 @@ saw2-recomp/
 - [Xenia](https://github.com/xenia-project/xenia) / [Xenia Canary](https://github.com/xenia-canary/xenia-canary) — foundations for the Xenos runtime
 - [extract-xiso](https://github.com/XboxDev/extract-xiso)
 
-Port work by **Matteo Santoro**.
+Port work by **[Matt-code-d](https://github.com/Matt-code-d)**.
 
 Some bring-up steps (function-boundary hunting, launcher wiring, crash triage) used **AI assistance** as a tool alongside manual reverse-engineering and testing. The runtime, game dump handling, and final decisions stay human-owned.
+
+---
+
+## License
+
+This repository’s original code is under the [MIT License](LICENSE) (attribution required).  
+MIT covers **only** this port’s own work. It does **not** cover the game itself or third-party libraries/SDKs/tools (ReXGlue, extract-xiso, etc.) — those keep their own licenses.
 
 ---
 
