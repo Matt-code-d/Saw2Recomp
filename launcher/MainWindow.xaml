@@ -12,7 +12,7 @@
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
 
-    <Border Grid.Column="0" Background="#100F0E" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
+    <Border Grid.Column="0" Background="#0A0C0E" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Margin="16,24,14,20">
           <Image Source="pack://application:,,,/Assets/logo.png"
@@ -216,19 +216,26 @@
             <ComboBoxItem Content="xinput"/>
           </ComboBox>
           <CheckBox x:Name="ChkMnk" Content="Enable mouse + keyboard" Checked="Mnk_Changed" Unchecked="Mnk_Changed"/>
-          <CheckBox x:Name="ChkMnkMouse" Content="Mouse aims (right stick)" IsChecked="True"/>
+          <CheckBox x:Name="ChkMnkMouse" Content="Mouse looks / aims (camera = mouse, not arrow keys)" IsChecked="True"
+                    Checked="Mnk_Changed" Unchecked="Mnk_Changed"/>
           <CheckBox x:Name="ChkGuide" Content="Pass through Guide / Xbox button"/>
-          <TextBlock x:Name="LblSens" Style="{StaticResource FieldLabel}" Text="MOUSE SENSITIVITY" Margin="0,12,0,4"/>
-          <Slider x:Name="SldSens" Minimum="0.1" Maximum="5" Value="1" TickFrequency="0.1" Width="280" HorizontalAlignment="Left"/>
+          <TextBlock x:Name="LblSens" Style="{StaticResource FieldLabel}" Text="MOUSE LOOK SENSITIVITY" Margin="0,12,0,4"/>
+          <Slider x:Name="SldSens" Minimum="0.5" Maximum="40" Value="3" TickFrequency="0.5" IsSnapToTickEnabled="True" Width="320" HorizontalAlignment="Left"/>
           <TextBlock x:Name="TxtSens" Foreground="{StaticResource Mute}"/>
+          <TextBlock x:Name="LblMouseLookHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
+                     Text="With mouse look on, camera rotation comes from the mouse. Right-stick keyboard binds are hidden and not sent."/>
 
-          <TextBlock x:Name="LblKeybindsHead" Style="{StaticResource SectionHead}" Text="KEYBOARD MAP"/>
-          <TextBlock x:Name="LblKeybindsHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap"
-                     Text="Only used when mouse + keyboard is enabled. Comma-separated keys allowed (example: Space,E). Click a field and press a key to capture."/>
-          <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-            <Button x:Name="BtnResetBinds" Style="{StaticResource GhostBtn}" Content="Reset to defaults" Padding="14,8" Click="ResetBinds_Click"/>
-          </StackPanel>
-          <StackPanel x:Name="PanelKeybinds"/>
+          <Border x:Name="PanelKeybindsWrap" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="16" Margin="0,8,0,0">
+            <StackPanel>
+              <DockPanel Margin="0,0,0,8">
+                <Button x:Name="BtnResetBinds" DockPanel.Dock="Right" Style="{StaticResource GhostBtn}" Content="Reset defaults" Padding="12,6" Click="ResetBinds_Click"/>
+                <TextBlock x:Name="LblKeybindsHead" Style="{StaticResource SectionHead}" Text="REMAP KEYBOARD" Margin="0"/>
+              </DockPanel>
+              <TextBlock x:Name="LblKeybindsHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,0,0,14" TextWrapping="Wrap"
+                         Text="Turn on mouse + keyboard above, then click a key slot and press a new key. Escape cancels. Works like remapping a pad — each Xbox button gets a keyboard key."/>
+              <StackPanel x:Name="PanelKeybinds"/>
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
 

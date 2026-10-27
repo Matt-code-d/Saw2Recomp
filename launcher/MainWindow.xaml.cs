@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Win32;
 using Saw2Launcher.Models;
 using Saw2Launcher.Services;
@@ -20,6 +21,9 @@ public partial class MainWindow : Window
     private string _activePanel = "PLAY";
     private readonly Dictionary<string, TextBox> _keybindBoxes = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, TextBlock> _keybindLabels = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, TextBlock> _keybindGroupHeaders = new(StringComparer.OrdinalIgnoreCase);
+    private string? _listeningCvar;
+    private string _listeningPrev = "";
 
     public MainWindow()
     {
@@ -49,7 +53,7 @@ public partial class MainWindow : Window
         };
 
         SldAudioQ.ValueChanged += (_, _) => RefreshAudioFramesLabel();
-        SldSens.ValueChanged += (_, _) => TxtSens.Text = SldSens.Value.ToString("0.0");
+        SldSens.ValueChanged += (_, _) => RefreshSensLabel();
         SldFsrSharp.ValueChanged += (_, _) => TxtFsrSharp.Text = SldFsrSharp.Value.ToString("0.00");
         SldCasSharp.ValueChanged += (_, _) => TxtCasSharp.Text = SldCasSharp.Value.ToString("0.00");
 
@@ -60,7 +64,7 @@ public partial class MainWindow : Window
         RefreshInstallStatus();
         RescanLanguages(preferOs: _settings.UserLanguage == 0 || _settings.UserLanguage == 1);
         ApplyLocaleFromSettings();
-        TxtSens.Text = SldSens.Value.ToString("0.0");
+        RefreshSensLabel();
         TxtFsrSharp.Text = SldFsrSharp.Value.ToString("0.00");
         TxtCasSharp.Text = SldCasSharp.Value.ToString("0.00");
         UpdateFpsUi();
@@ -75,42 +79,109 @@ public partial class MainWindow : Window
         PanelKeybinds.Children.Clear();
         _keybindBoxes.Clear();
         _keybindLabels.Clear();
-        foreach (var entry in KeybindCatalog.All)
+        _keybindGroupHeaders.Clear();
+
+        foreach (var group in KeybindCatalog.ByGroup())
         {
-            var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(220) });
-            var label = new TextBlock
+            var head = new TextBlock
             {
-                Style = (Style)FindResource("FieldLabel"),
-                VerticalAlignment = VerticalAlignment.Center,
-                Text = entry.Cvar,
+                Text = group.Key,
+                Foreground = (System.Windows.Media.Brush)FindResource("Rust"),
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 10, 0, 8),
             };
-            var box = new TextBox { Text = entry.DefaultKeys, Tag = entry.Cvar };
-            box.PreviewKeyDown += KeybindBox_PreviewKeyDown;
-            Grid.SetColumn(label, 0);
-            Grid.SetColumn(box, 1);
-            row.Children.Add(label);
-            row.Children.Add(box);
-            PanelKeybinds.Children.Add(row);
-            _keybindLabels[entry.Cvar] = label;
-            _keybindBoxes[entry.Cvar] = box;
+            PanelKeybinds.Children.Add(head);
+            _keybindGroupHeaders[group.Key] = head;
+
+            foreach (var entry in group)
+            {
+                var row = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(168) });
+
+                var label = new TextBlock
+                {
+                    Text = entry.LabelKey,
+                    Foreground = (System.Windows.Media.Brush)FindResource("Bone"),
+                    FontSize = 13,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+
+                var box = new TextBox
+                {
+                    Text = entry.DefaultKeys,
+                    Tag = entry.Cvar,
+                    Style = (Style)FindResource("BindKeyBox"),
+                    ToolTip = entry.DefaultKeys,
+                };
+                box.GotKeyboardFocus += KeybindBox_GotFocus;
+                box.LostKeyboardFocus += KeybindBox_LostFocus;
+                box.PreviewKeyDown += KeybindBox_PreviewKeyDown;
+                box.PreviewMouseLeftButtonDown += (_, e) =>
+                {
+                    if (!box.IsKeyboardFocused)
+                    {
+                        box.Focus();
+                        e.Handled = true;
+                    }
+                };
+
+                Grid.SetColumn(label, 0);
+                Grid.SetColumn(box, 1);
+                row.Children.Add(label);
+                row.Children.Add(box);
+                PanelKeybinds.Children.Add(row);
+                _keybindLabels[entry.Cvar] = label;
+                _keybindBoxes[entry.Cvar] = box;
+            }
         }
+    }
+
+    private void KeybindBox_GotFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is not TextBox box || box.Tag is not string cvar) return;
+        _listeningCvar = cvar;
+        _listeningPrev = box.Text;
+        box.Text = _l["input.listening"];
+        box.SelectAll();
+    }
+
+    private void KeybindBox_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is not TextBox box || box.Tag is not string cvar) return;
+        if (_listeningCvar == cvar && box.Text == _l["input.listening"])
+            box.Text = string.IsNullOrWhiteSpace(_listeningPrev) ? "" : _listeningPrev;
+        if (_listeningCvar == cvar)
+            _listeningCvar = null;
     }
 
     private void KeybindBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (sender is not TextBox box) return;
-        // Allow editing modifiers / navigation only when capturing a bind.
-        if (e.Key is System.Windows.Input.Key.Tab) return;
-        e.Handled = true;
+        if (sender is not TextBox box || box.Tag is not string cvar) return;
+        if (_listeningCvar != cvar) return;
+
         var key = e.Key == System.Windows.Input.Key.System ? e.SystemKey : e.Key;
-        if (key is System.Windows.Input.Key.LeftCtrl or System.Windows.Input.Key.RightCtrl
+        e.Handled = true;
+
+        if (key is System.Windows.Input.Key.Escape)
+        {
+            box.Text = _listeningPrev;
+            _listeningCvar = null;
+            Keyboard.ClearFocus();
+            return;
+        }
+
+        if (key is System.Windows.Input.Key.Tab
+            or System.Windows.Input.Key.LeftCtrl or System.Windows.Input.Key.RightCtrl
             or System.Windows.Input.Key.LeftAlt or System.Windows.Input.Key.RightAlt
             or System.Windows.Input.Key.LeftShift or System.Windows.Input.Key.RightShift
             or System.Windows.Input.Key.LWin or System.Windows.Input.Key.RWin)
             return;
+
         box.Text = FormatCaptureKey(key);
+        _listeningCvar = null;
+        Keyboard.ClearFocus();
     }
 
     private static string FormatCaptureKey(System.Windows.Input.Key key) => key switch
@@ -119,6 +190,7 @@ public partial class MainWindow : Window
         System.Windows.Input.Key.Return => "Enter",
         System.Windows.Input.Key.Escape => "Escape",
         System.Windows.Input.Key.Back => "Backspace",
+        System.Windows.Input.Key.Delete => "Delete",
         System.Windows.Input.Key.Left => "Left",
         System.Windows.Input.Key.Right => "Right",
         System.Windows.Input.Key.Up => "Up",
@@ -131,15 +203,48 @@ public partial class MainWindow : Window
         System.Windows.Input.Key.OemPeriod => "Period",
         System.Windows.Input.Key.OemMinus => "Minus",
         System.Windows.Input.Key.OemPlus => "Plus",
+        System.Windows.Input.Key.D0 => "0",
+        System.Windows.Input.Key.D1 => "1",
+        System.Windows.Input.Key.D2 => "2",
+        System.Windows.Input.Key.D3 => "3",
+        System.Windows.Input.Key.D4 => "4",
+        System.Windows.Input.Key.D5 => "5",
+        System.Windows.Input.Key.D6 => "6",
+        System.Windows.Input.Key.D7 => "7",
+        System.Windows.Input.Key.D8 => "8",
+        System.Windows.Input.Key.D9 => "9",
         _ => key.ToString(),
     };
 
     private void UpdateKeybindPanelEnabled()
     {
         var on = ChkMnk.IsChecked == true;
-        PanelKeybinds.IsEnabled = on;
-        BtnResetBinds.IsEnabled = on;
-        PanelKeybinds.Opacity = on ? 1.0 : 0.45;
+        PanelKeybindsWrap.IsEnabled = on;
+        PanelKeybindsWrap.Opacity = on ? 1.0 : 0.45;
+        ChkMnkMouse.IsEnabled = on;
+        SldSens.IsEnabled = on && ChkMnkMouse.IsChecked == true;
+        LblSens.Opacity = SldSens.IsEnabled ? 1.0 : 0.45;
+        TxtSens.Opacity = SldSens.IsEnabled ? 1.0 : 0.45;
+        LblMouseLookHint.Visibility = on && ChkMnkMouse.IsChecked == true
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        RefreshLookBindsVisibility();
+    }
+
+    private void RefreshLookBindsVisibility()
+    {
+        // Mouse look owns right stick — hide keyboard look binds so people don't remap arrows for nothing.
+        var hideLook = ChkMnk.IsChecked == true && ChkMnkMouse.IsChecked == true;
+        const string lookGroup = "input.group.look";
+        if (_keybindGroupHeaders.TryGetValue(lookGroup, out var head))
+            head.Visibility = hideLook ? Visibility.Collapsed : Visibility.Visible;
+
+        foreach (var entry in KeybindCatalog.All.Where(e => e.GroupKey == lookGroup))
+        {
+            if (_keybindLabels.TryGetValue(entry.Cvar, out var label) &&
+                label.Parent is FrameworkElement row)
+                row.Visibility = hideLook ? Visibility.Collapsed : Visibility.Visible;
+        }
     }
 
     private void Mnk_Changed(object sender, RoutedEventArgs e)
@@ -245,9 +350,12 @@ public partial class MainWindow : Window
         ChkMnkMouse.Content = _l["input.mnk_mouse"];
         ChkGuide.Content = _l["input.guide"];
         LblSens.Text = _l["input.sens"];
+        LblMouseLookHint.Text = _l["input.mouse_look_hint"];
         LblKeybindsHead.Text = _l["input.keybinds_head"];
         LblKeybindsHint.Text = _l["input.keybinds_hint"];
         BtnResetBinds.Content = _l["input.reset_binds"];
+        foreach (var kv in _keybindGroupHeaders)
+            kv.Value.Text = _l[kv.Key];
         foreach (var entry in KeybindCatalog.All)
         {
             if (_keybindLabels.TryGetValue(entry.Cvar, out var label))
@@ -278,6 +386,9 @@ public partial class MainWindow : Window
 
     private void RefreshAudioFramesLabel() =>
         TxtAudioQ.Text = _l.Fmt("audio.frames", (int)SldAudioQ.Value);
+
+    private void RefreshSensLabel() =>
+        TxtSens.Text = $"×{SldSens.Value:0.00}";
 
     private void RelabelLanguageCombo()
     {
@@ -340,7 +451,8 @@ public partial class MainWindow : Window
         ChkMnk.IsChecked = _settings.MnkMode;
         ChkMnkMouse.IsChecked = _settings.MnkMouse;
         ChkGuide.IsChecked = _settings.GuideButton;
-        SldSens.Value = _settings.MnkSensitivity;
+        SldSens.Value = Math.Clamp(_settings.MnkSensitivity, SldSens.Minimum, SldSens.Maximum);
+        RefreshSensLabel();
         foreach (var entry in KeybindCatalog.All)
         {
             if (!_keybindBoxes.TryGetValue(entry.Cvar, out var box)) continue;

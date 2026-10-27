@@ -41,7 +41,8 @@ public sealed class LauncherSettings
     public string InputBackend { get; set; } = "sdl";
     public bool MnkMode { get; set; } = false;
     public bool MnkMouse { get; set; } = true;
-    public double MnkSensitivity { get; set; } = 1.0;
+    // Mouse→stick only; real controllers ignore this.
+    public double MnkSensitivity { get; set; } = 3.0;
     public bool GuideButton { get; set; } = false;
     /// <summary>ReXGlue keybind_* → key name(s). Empty map uses catalog defaults when M&amp;K is on.</summary>
     public Dictionary<string, string> Keybinds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -138,7 +139,8 @@ public sealed class LauncherSettings
         args.Add($"--input_backend={InputBackend}");
         args.Add(MnkMode ? "--mnk_mode" : "--no-mnk_mode");
         args.Add(MnkMouse ? "--mnk_mouse" : "--no-mnk_mouse");
-        args.Add($"--mnk_sensitivity={MnkSensitivity}");
+        // UI value is a comfort scale; engine still maps through stick emulation.
+        args.Add($"--mnk_sensitivity={MnkSensitivity.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
         args.Add(GuideButton ? "--guide_button" : "--no-guide_button");
         if (MnkMode)
         {
@@ -147,6 +149,14 @@ public sealed class LauncherSettings
             {
                 if (!string.IsNullOrWhiteSpace(kv.Value))
                     map[kv.Key] = kv.Value.Trim();
+            }
+            // Mouse owns look (right stick). Don't also inject keyboard rstick binds —
+            // they fight the mouse and feel like "camera still on arrows".
+            if (MnkMouse)
+            {
+                foreach (var k in map.Keys.Where(k =>
+                             k.StartsWith("keybind_rstick_", StringComparison.OrdinalIgnoreCase)).ToList())
+                    map.Remove(k);
             }
             foreach (var kv in map)
                 args.Add($"--{kv.Key}={kv.Value}");

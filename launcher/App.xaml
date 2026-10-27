@@ -3,15 +3,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
   <Application.Resources>
-    <SolidColorBrush x:Key="Bg" Color="#0B0B0B"/>
-    <SolidColorBrush x:Key="Panel" Color="#141414"/>
-    <SolidColorBrush x:Key="PanelLift" Color="#1C1C1C"/>
-    <SolidColorBrush x:Key="Line" Color="#2A2A2A"/>
-    <SolidColorBrush x:Key="Bone" Color="#E6DDD0"/>
-    <SolidColorBrush x:Key="Mute" Color="#8A837A"/>
-    <SolidColorBrush x:Key="Blood" Color="#9E1B1B"/>
-    <SolidColorBrush x:Key="BloodDim" Color="#5C1010"/>
-    <SolidColorBrush x:Key="Rust" Color="#A85A2A"/>
+    <!-- Saw pit: cold industrial, dried blood, trap-tape yellow. No cream/terracotta. -->
+    <SolidColorBrush x:Key="Bg" Color="#070809"/>
+    <SolidColorBrush x:Key="Panel" Color="#101214"/>
+    <SolidColorBrush x:Key="PanelLift" Color="#161A1E"/>
+    <SolidColorBrush x:Key="Line" Color="#2C3238"/>
+    <SolidColorBrush x:Key="Bone" Color="#D2D6DA"/>
+    <SolidColorBrush x:Key="Mute" Color="#6E747A"/>
+    <SolidColorBrush x:Key="Blood" Color="#B01018"/>
+    <SolidColorBrush x:Key="BloodDim" Color="#4A080C"/>
+    <SolidColorBrush x:Key="Rust" Color="#C4A035"/>
 
     <Style TargetType="Window">
       <Setter Property="Background" Value="{StaticResource Bg}"/>
@@ -38,12 +39,12 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="bd" Property="Background" Value="#1A1A1A"/>
+                <Setter TargetName="bd" Property="Background" Value="#14181C"/>
                 <Setter Property="Foreground" Value="{StaticResource Bone}"/>
               </Trigger>
               <Trigger Property="Tag" Value="active">
                 <Setter TargetName="bd" Property="BorderThickness" Value="3,0,0,0"/>
-                <Setter TargetName="bd" Property="Background" Value="#181818"/>
+                <Setter TargetName="bd" Property="Background" Value="#1A1012"/>
                 <Setter Property="Foreground" Value="{StaticResource Bone}"/>
               </Trigger>
             </ControlTemplate.Triggers>
@@ -68,11 +69,11 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="bd" Property="Background" Value="#B82222"/>
+                <Setter TargetName="bd" Property="Background" Value="#D41420"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
-                <Setter TargetName="bd" Property="Background" Value="#3A3A3A"/>
-                <Setter Property="Foreground" Value="#666"/>
+                <Setter TargetName="bd" Property="Background" Value="#2A2E32"/>
+                <Setter Property="Foreground" Value="#555A60"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -93,7 +94,8 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Bone}"/>
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Rust}"/>
+                <Setter Property="Foreground" Value="{StaticResource Rust}"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -102,16 +104,16 @@
     </Style>
 
     <Style TargetType="TextBox">
-      <Setter Property="Background" Value="#0F0F0F"/>
+      <Setter Property="Background" Value="#0A0C0E"/>
       <Setter Property="Foreground" Value="{StaticResource Bone}"/>
       <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="10,8"/>
-      <Setter Property="CaretBrush" Value="{StaticResource Bone}"/>
+      <Setter Property="CaretBrush" Value="{StaticResource Blood}"/>
     </Style>
 
     <Style TargetType="ComboBox">
-      <Setter Property="Background" Value="#0F0F0F"/>
+      <Setter Property="Background" Value="#0A0C0E"/>
       <Setter Property="Foreground" Value="{StaticResource Bone}"/>
       <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
       <Setter Property="Padding" Value="8,6"/>
@@ -120,7 +122,7 @@
           <ControlTemplate TargetType="ComboBox">
             <Grid>
               <ToggleButton x:Name="ToggleButton" Focusable="False" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                            ClickMode="Press" Background="#0F0F0F" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                            ClickMode="Press" Background="#0A0C0E" BorderBrush="{StaticResource Line}" BorderThickness="1">
                 <ToggleButton.Template>
                   <ControlTemplate TargetType="ToggleButton">
                     <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
@@ -144,7 +146,7 @@
                                 ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
               <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
                 <Border x:Name="DropDown" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}"
-                        Background="#161616" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                        Background="#12161A" BorderBrush="{StaticResource Line}" BorderThickness="1">
                   <ScrollViewer Margin="0" SnapsToDevicePixels="True">
                     <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
                   </ScrollViewer>
@@ -168,10 +170,11 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsHighlighted" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="#2A1818"/>
+                <Setter TargetName="Bd" Property="Background" Value="#2A1214"/>
               </Trigger>
               <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="#3A1515"/>
+                <Setter TargetName="Bd" Property="Background" Value="#3A1014"/>
+                <Setter Property="Foreground" Value="{StaticResource Bone}"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -186,6 +189,7 @@
 
     <Style TargetType="Slider">
       <Setter Property="Margin" Value="0,8,0,8"/>
+      <Setter Property="Foreground" Value="{StaticResource Blood}"/>
     </Style>
 
     <Style x:Key="SectionTitle" TargetType="TextBlock">
@@ -204,15 +208,37 @@
 
     <Style x:Key="FieldLabel" TargetType="TextBlock">
       <Setter Property="Foreground" Value="{StaticResource Mute}"/>
-      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="Margin" Value="0,0,0,4"/>
     </Style>
 
     <Style x:Key="SectionHead" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Bone}"/>
-      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="{StaticResource Rust}"/>
+      <Setter Property="FontSize" Value="11"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="Margin" Value="0,18,0,8"/>
+    </Style>
+
+    <Style x:Key="BindKeyBox" TargetType="TextBox">
+      <Setter Property="Background" Value="#0A0C0E"/>
+      <Setter Property="Foreground" Value="{StaticResource Bone}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="FontFamily" Value="Consolas"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="CaretBrush" Value="{StaticResource Blood}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Style.Triggers>
+        <Trigger Property="IsFocused" Value="True">
+          <Setter Property="BorderBrush" Value="{StaticResource Rust}"/>
+          <Setter Property="Background" Value="#1A1610"/>
+          <Setter Property="Foreground" Value="{StaticResource Rust}"/>
+        </Trigger>
+      </Style.Triggers>
     </Style>
   </Application.Resources>
 </Application>
