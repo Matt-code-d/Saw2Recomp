@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "saw2_achievement_toast.h"
 #include "saw2_hud_mod.h"
 #include "ue3_framerate_unlock.h"
 
@@ -33,15 +34,9 @@ class Saw2App : public rex::ReXApp {
       config.gpu_plugin = "xenos";
     }
 
-    // Soften alpha-tested fog/particle edges. Without this, Xenos often draws
-    // hard-edged quads in mist (especially on NVIDIA). Leave alone if the user
-    // already passed --use_fuzzy_alpha_epsilon / --no-use_fuzzy_alpha_epsilon.
     if (!rex::cvar::HasNonDefaultValue("use_fuzzy_alpha_epsilon")) {
       rex::cvar::SetFlagByName("use_fuzzy_alpha_epsilon", "true");
     }
-
-    // UE3 puddles: rov + invalid fetch only. Skip readback/gamma/clear_memory —
-    // those hitch when scene captures run. Present FSR/CAS/bilinear stay untouched.
     if (!rex::cvar::HasNonDefaultValue("render_target_path_d3d12")) {
       rex::cvar::SetFlagByName("render_target_path_d3d12", "rov");
     }
@@ -59,13 +54,27 @@ class Saw2App : public rex::ReXApp {
   void OnCreateDialogs(rex::ui::ImGuiDrawer* drawer) override {
     saw2_hud::RegisterCvars();
     hud_overlay_ = saw2_hud::CreateOverlay(drawer, immediate_drawer(), runtime());
+    // Own the toast ourselves (same pattern as HUD). Do NOT return it from
+    // CreateAchievementNotificationDialog — that path null-deref'd on this title.
+    ach_toast_.reset();
+    if (AchievementsEnabled() && drawer) {
+      ach_toast_ = std::unique_ptr<saw2_achievements::SafeToastDialog>(
+          new saw2_achievements::SafeToastDialog(drawer));
+    }
     ApplyControllerCursorPolicy();
   }
 
-  void OnPreLaunchModule() override { ApplyControllerCursorPolicy(); }
+  void OnPostSetup() override { ApplyAchievementsPolicy(); }
+
+  void OnPreLaunchModule() override {
+    ApplyControllerCursorPolicy();
+    ApplyAchievementsPolicy();
+  }
 
   void OnPostLaunchModule(rex::system::XThread* thread) override {
     (void)thread;
+    ApplyAchievementsPolicy();
+    HookAchievementToast();
     const float fps = ue3_framerate::TargetFpsFromCvars();
     if (fps <= 0.0f || fps > 60.0f) {
       ue3_framerate::StartBackgroundUnlock(runtime(), fps);
@@ -76,25 +85,54 @@ class Saw2App : public rex::ReXApp {
     if (focused) ApplyControllerCursorPolicy();
   }
 
-  // Built-in toast AV's this title right after XGIUserWriteAchievements
-  // (guest then touches missing CookedXenon/<hash>.xxx). Unlocks still persist.
+  std::unique_ptr<rex::ui::ImGuiDialog> CreateAchievementsOverlay() override {
+    return nullptr;
+  }
+
   std::unique_ptr<rex::ui::AchievementNotificationDialog>
   CreateAchievementNotificationDialog() override {
     return nullptr;
   }
 
  private:
-  // Pad-only play: keep the host cursor off the game view. M&K mode leaves
-  // visibility alone so the MnK driver can capture / reveal as needed.
+  static bool FlagTruthy(const std::string& v) {
+    return v == "true" || v == "1" || v == "yes" || v == "on";
+  }
+
+  static bool AchievementsEnabled() {
+    const std::string v = rex::cvar::GetFlagByName("saw2_achievements");
+    if (v.empty()) return true;
+    return FlagTruthy(v);
+  }
+
+  void ApplyAchievementsPolicy() {
+    try {
+      if (!AchievementsEnabled()) {
+        achievements().ReplaceAchievements({});
+        ach_toast_.reset();
+      }
+    } catch (...) {
+    }
+  }
+
+  void HookAchievementToast() {
+    if (ach_toast_hooked_ || !ach_toast_ || !AchievementsEnabled()) return;
+    ach_toast_hooked_ = true;
+    achievements().RegisterUnlockCallback([this](const rex::system::AchievementEvent& ev) {
+      if (ach_toast_) ach_toast_->Push(ev);
+    });
+  }
+
   void ApplyControllerCursorPolicy() {
     auto* w = window();
     if (!w) return;
     const std::string mnk = rex::cvar::GetFlagByName("mnk_mode");
-    const bool mnk_on = (mnk == "true" || mnk == "1");
-    if (!mnk_on) {
+    if (!FlagTruthy(mnk)) {
       w->SetCursorVisibility(rex::ui::Window::CursorVisibility::kHidden);
     }
   }
 
   std::unique_ptr<rex::ui::ImGuiDialog> hud_overlay_;
+  std::unique_ptr<saw2_achievements::SafeToastDialog> ach_toast_;
+  bool ach_toast_hooked_ = false;
 };

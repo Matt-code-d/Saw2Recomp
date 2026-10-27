@@ -99,7 +99,7 @@ If the game dies with `[FATAL] Call to invalid or unregistered function at 0x...
 | AUDIO | mute, SDL queue depth |
 | INPUT | sdl / xinput, mouse+keyboard, sensitivity |
 | LANGUAGE | `--user_language` from packs on your ISO |
-| ADVANCED | boot logo skip via UE3 `-nostartupmovies` (guest `--cl=`), HUD mod (health/syringes/items), log level, extra CLI args |
+| ADVANCED / MODS | boot logo skip via UE3 `-nostartupmovies` (guest `--cl=`), experimental HUD mod (health/syringes/items), achievements on/off + safe text toast, log level, extra CLI args |
 
 \*FSR/CAS need a FidelityFX-enabled Xenos build of the SDK. Stock 0.10.0 binaries usually expose **bilinear** only. DLSS is not available on the Xenos path.
 
@@ -111,7 +111,8 @@ If the game dies with `[FATAL] Call to invalid or unregistered function at 0x...
 - **Black squares in water puddles / some reflections** — fixed with D3D12 `rov` + `gpu_allow_invalid_fetch_constants` (present upscaling FSR/CAS/bilinear is independent). Avoid stacking `--readback_resolve`, `--gamma_render_target_as_unorm16`, or `--clear_memory_page_state` near water — they hitch. `resolution_scale` stays 1 so ROV cost isn’t multiplied.
 - **Movie subtitle tracks** — disc ships unsuffixed Movies/*.txt; localized probes like lvla_p_ITA.txt are hardlinked at launch so cutscene captions resolve.
 - **Missing `.xxx` probes** in the log (`Textures.xxx`, numeric hashes, etc.) are often optional UE3 companions — noisy, not always fatal.
-- **Achievement toast** — host dialog disabled on purpose; unlocks still save under `Documents\saw2\achievements`.
+- **Achievements** — launcher Mods toggle; unlocks save under `Documents\saw2\achievements` with a safe text toast when enabled (stock ImGui achievement dialog stays off).
+- **HUD health** — experimental guest memory bind; may not track real HP yet.
 - **Input race** — guest `XamInput*` calls are serialized (same heap-corruption race fixed in other ReXGlue ports when a pad is connected).
 
 ---

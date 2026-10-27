@@ -378,6 +378,9 @@ public partial class MainWindow : Window
         LblMods.Text = _l["adv.mods"];
         ChkHudMod.Content = _l["adv.hud_mod"];
         LblHudHint.Text = _l["adv.hud_hint"];
+        LblAchievementsHead.Text = _l["adv.achievements_head"];
+        ChkAchievements.Content = _l["adv.achievements"];
+        LblAchievementsHint.Text = _l["adv.achievements_hint"];
         LblBoot.Text = _l["adv.boot"];
         ChkSkipBoot.Content = _l["adv.skip_boot"];
         LblSkipHint.Text = _l["adv.skip_hint"];
@@ -478,6 +481,7 @@ public partial class MainWindow : Window
 
         ChkSkipBoot.IsChecked = _settings.SkipBootLogos;
         ChkHudMod.IsChecked = _settings.HudMod;
+        ChkAchievements.IsChecked = _settings.Achievements;
         SelectCombo(CmbLogLevel, _settings.LogLevel);
         ChkVerbose.IsChecked = _settings.VerboseLog;
         ChkLogFile.IsChecked = _settings.WriteLogFile;
@@ -532,6 +536,7 @@ public partial class MainWindow : Window
 
         _settings.SkipBootLogos = ChkSkipBoot.IsChecked == true;
         _settings.HudMod = ChkHudMod.IsChecked == true;
+        _settings.Achievements = ChkAchievements.IsChecked == true;
         _settings.HudDemo = false;
         _settings.LogLevel = ComboValue(CmbLogLevel);
         _settings.VerboseLog = ChkVerbose.IsChecked == true;

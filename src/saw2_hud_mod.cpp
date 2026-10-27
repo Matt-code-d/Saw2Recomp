@@ -3,6 +3,7 @@
 #include <rex/cvar.h>
 #include <rex/logging.h>
 #include <rex/runtime.h>
+#include <rex/system/xmemory.h>
 #include <rex/ui/image_decode.h>
 #include <rex/ui/immediate_drawer.h>
 
@@ -31,6 +32,8 @@
 
 REXCVAR_DEFINE_BOOL(saw2_hud_mod, false, "Mods",
                     "Show host HUD overlay (health, syringes, items)");
+REXCVAR_DEFINE_BOOL(saw2_achievements, true, "Mods",
+                    "Host achievements: persist unlocks under Documents/saw2/achievements");
 REXCVAR_DEFINE_BOOL(saw2_hud_demo, false, "Mods",
                     "Animate demo HUD values (fallback while guest bind is pending)");
 REXCVAR_DEFINE_DOUBLE(saw2_hud_debug_health, -1.0, "Mods",
@@ -85,11 +88,15 @@ bool IsPlausibleHealthPair(float cur, float mx) {
 }
 
 struct HealthCandidate {
-  uintptr_t addr = 0;  // current
-  int max_delta = 4;
+  uintptr_t addr = 0;  // current HP float/int host pointer
+  int max_delta = 4;   // 0 = solo float (max forced 100); else ±offset to max
   bool be = true;
+  bool as_int = false;
   float cur = 0.f;
   float max = 100.f;
+  float prev_cur = -1.f;
+  int changes = 0;  // times cur moved while sticky — live pawn signal
+  std::chrono::steady_clock::time_point bound_at{};
 };
 
 #if defined(_WIN32)
@@ -143,18 +150,29 @@ int ScanSyringesNear(uint8_t* center, bool be) {
   return (best >= 1 && best <= 6) ? best : 0;
 }
 
-float ScorePair(float cur, float mx) {
+float ScorePair(float cur, float mx, bool be) {
   float score = 5.f;
+  // Xbox guest objects are big-endian — prefer BE strongly.
+  if (be) score += 18.f;
   if (std::fabs(mx - 100.f) < 0.05f) score += 50.f;
-  else if (std::fabs(mx - 1.f) < 0.02f) score += 45.f;
-  else if (std::fabs(mx - 50.f) < 0.05f) score += 25.f;
-  else if (std::fabs(mx - 200.f) < 0.05f) score += 20.f;
+  else if (std::fabs(mx - 1.f) < 0.02f) score += 40.f;
+  else if (std::fabs(mx - 50.f) < 0.05f) score += 22.f;
+  else if (std::fabs(mx - 200.f) < 0.05f) score += 18.f;
   else if (mx >= 25.f && mx <= 150.f) score += 10.f;
   if (cur > 0.05f) score += 12.f;
   if (cur >= mx * 0.5f) score += 8.f;
   if (cur >= mx * 0.9f) score += 12.f;
-  if (std::fabs(cur - mx) < 0.05f * std::max(mx, 1.f)) score += 8.f;
+  // Full health is the common spawn state for the local pawn — require this
+  // for a confident first bind (avoids sticky junk like 50.1/100 constants).
+  if (std::fabs(cur - mx) < 0.02f * std::max(mx, 1.f)) score += 40.f;
+  // Half-health constants are extremely common in cooked data — demote.
+  if (std::fabs(cur - mx * 0.5f) < 0.15f && std::fabs(cur - mx) > 1.f) score -= 25.f;
   return score;
+}
+
+bool LooksFullHealth(float cur, float mx) {
+  return IsPlausibleHealthPair(cur, mx) &&
+         std::fabs(cur - mx) < 0.02f * std::max(mx, 1.f);
 }
 #endif
 
@@ -206,12 +224,11 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
     const float fade = std::clamp((age_s - kAppearAfter) / kFadeSecs, 0.f, 1.f);
     if (fade <= 0.001f) return;
 
+    // Only during gameplay, and only after guest HP actually binds.
+    // Pending used to pulse the fill (looked like HP oscillating in menus).
+    if (!gameplay_ok_.load(std::memory_order_relaxed)) return;
     HudSnapshot snap = BuildSnapshot();
-    if (!snap.valid) {
-      snap.valid = true;
-      snap.health = snap.health_max;
-      snap.source = "pending";
-    }
+    if (!snap.valid) return;
 
     EnsureTextures();
 
@@ -422,16 +439,14 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
     }
   }
 
-  uint8_t* ResolveMembase() {
-    if (runtime_) {
-      if (uint8_t* b = runtime_->virtual_membase()) return b;
-    }
-    if (auto* inst = rex::Runtime::instance()) {
-      if (uint8_t* b = inst->virtual_membase()) {
-        runtime_ = inst;
-        return b;
-      }
-    }
+  rex::Runtime* ResolveRuntime() {
+    if (runtime_) return runtime_;
+    runtime_ = rex::Runtime::instance();
+    return runtime_;
+  }
+
+  rex::memory::Memory* ResolveMemory() {
+    if (auto* rt = ResolveRuntime()) return rt->memory();
     return nullptr;
   }
 
@@ -463,24 +478,13 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
 
   void ScanPass() {
 #if defined(_WIN32)
-    uint8_t* membase = ResolveMembase();
-    if (!membase) {
-      if ((scan_window_++ % 32) == 0) REXLOG_WARN("HUD: virtual_membase null");
+    auto* mem = ResolveMemory();
+    uint8_t* phys = mem ? mem->physical_membase() : nullptr;
+    if (!phys) {
+      if ((scan_window_++ % 32) == 0) REXLOG_WARN("HUD: physical_membase null");
       return;
     }
-
-    // 2 MB windows across typical UE3 heap / physical mirror range.
-    constexpr uint64_t kWindow = 0x00200000ull;
-    constexpr uint64_t kBegin = 0x20000000ull;
-    constexpr uint64_t kEnd = 0x90000000ull;
-    const uint64_t nwin = (kEnd - kBegin) / kWindow;
-    const uint64_t win0 = kBegin + (scan_window_++ % nwin) * kWindow;
-    uint8_t* start = membase + win0;
-    uint8_t* end = membase + win0 + kWindow;
-
-    if ((scan_window_ % 16) == 1) {
-      REXLOG_INFO("HUD: scan begin 0x{:x} membase={}", win0, static_cast<const void*>(membase));
-    }
+    if (!runtime_) runtime_ = ResolveRuntime();
 
     HealthCandidate sticky{};
     {
@@ -493,22 +497,57 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
         std::lock_guard lock(mu_);
         sticky = sticky_;
       }
+      // False-positive constants never change — drop and keep searching.
+      if (sticky.addr && sticky.changes == 0) {
+        const auto age = std::chrono::steady_clock::now() - sticky.bound_at;
+        if (age > std::chrono::seconds(12)) {
+          REXLOG_WARN("HUD: sticky @{:x} frozen at {:.1f}/{:.1f} for {}s — rescanning",
+                      sticky.addr, sticky.prev_cur, sticky.max,
+                      std::chrono::duration_cast<std::chrono::seconds>(age).count());
+          std::lock_guard lock(mu_);
+          sticky_ = {};
+          probed_ = {};
+          sticky = {};
+        }
+      }
+      if (sticky.addr) {
+        ScanWorldMarkersOnly(mem);
+        return;
+      }
     }
 
+    // CRITICAL: only touch physical_membase via VirtualQuery + SafeCopy.
+    // SearchAligned / TranslateVirtual on unmapped guest VA (e.g. 0x40000000)
+    // trips ReX VEH → "Unhandled guest access violation" and kills the title.
+    // UE3 heap data lives in the upper half of physical RAM — scan that first.
+    constexpr size_t kPhysSize = 0x20000000u;
+    constexpr size_t kWindow = 0x00400000u;
+    const size_t nwin = kPhysSize / kWindow;
+    // Rotate starting at 0x10000000 (window 64) where live objects showed up.
+    const size_t win_i = static_cast<size_t>((scan_window_++ + 64) % nwin);
+    uint8_t* start = phys + win_i * kWindow;
+    uint8_t* end = start + kWindow;
+
     static const uint8_t kBe100[] = {0x42, 0xC8, 0x00, 0x00};
-    static const uint8_t kLe100[] = {0x00, 0x00, 0xC8, 0x42};
     static const uint8_t kBe50[] = {0x42, 0x48, 0x00, 0x00};
-    static const uint8_t kLe50[] = {0x00, 0x00, 0x48, 0x42};
-    // Normalized HealthMax=1.0 (common for percent-style pawns / RTPC mirrors).
     static const uint8_t kBe1[] = {0x3F, 0x80, 0x00, 0x00};
-    static const uint8_t kLe1[] = {0x00, 0x00, 0x80, 0x3F};
+    static const uint8_t kBe200[] = {0x43, 0x48, 0x00, 0x00};
+    static const uint8_t kBeI100[] = {0x00, 0x00, 0x00, 0x64};
+    static const uint8_t kBeI50[] = {0x00, 0x00, 0x00, 0x32};
 
     HealthCandidate best{};
     float best_score = -1.f;
     int regions = 0;
     int hits = 0;
     int str_hits = 0;
+    int nz_pages = 0;
+    int pair_hits = 0;
     std::vector<uint8_t> page(0x1000);
+
+    if ((scan_window_ % 16) == 1) {
+      REXLOG_INFO("HUD: scan phys+0x{:x} host={}", win_i * kWindow,
+                  static_cast<const void*>(start));
+    }
 
     uint8_t* p = start;
     while (p < end && !stop_.load()) {
@@ -522,7 +561,7 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
       }
       if (region >= end) break;
 
-      if (RegionWritable(mbi) || RegionReadable(mbi)) {
+      if (RegionReadable(mbi)) {
         uint8_t* from = region < start ? start : region;
         uint8_t* to = region_end > end ? end : region_end;
         if (to > from + 16) {
@@ -533,9 +572,20 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
 
             str_hits += ScanMarkersInBuffer(page.data(), n, page_ptr);
 
-            if (!RegionWritable(mbi) || sticky.addr) continue;
+            bool nz = false;
+            for (size_t i = 0; i < n; i += 64) {
+              if (page[i] | page[std::min(i + 1, n - 1)] | page[std::min(i + 2, n - 1)] |
+                  page[std::min(i + 3, n - 1)]) {
+                nz = true;
+                break;
+              }
+            }
+            if (!nz) continue;
+            ++nz_pages;
 
-            auto consider_pat = [&](const uint8_t* pat, float maxv, bool be) {
+            if (!RegionWritable(mbi)) continue;
+
+            auto consider_float = [&](const uint8_t* pat, float maxv) {
               const uint8_t* cur = page.data();
               const uint8_t* lim = page.data() + n;
               int local = 0;
@@ -544,24 +594,47 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
                 if (!hit) break;
                 ++hits;
                 ++local;
-                const ptrdiff_t off = hit - page.data();
-                ConsiderAnchor(page_ptr + off, maxv, be, best, best_score);
+                ConsiderAnchor(page_ptr + (hit - page.data()), maxv, true, best, best_score);
                 cur = hit + 4;
               }
             };
-            consider_pat(kBe100, 100.f, true);
-            consider_pat(kLe100, 100.f, false);
-            consider_pat(kBe50, 50.f, true);
-            consider_pat(kLe50, 50.f, false);
-            consider_pat(kBe1, 1.f, true);
-            consider_pat(kLe1, 1.f, false);
+            auto consider_int = [&](const uint8_t* pat, float maxv) {
+              const uint8_t* cur = page.data();
+              const uint8_t* lim = page.data() + n;
+              int local = 0;
+              while (cur + 4 <= lim && local < 32) {
+                const uint8_t* hit = FindBytes(cur, static_cast<size_t>(lim - cur), pat, 4);
+                if (!hit) break;
+                ++hits;
+                ++local;
+                ConsiderIntAnchor(page_ptr + (hit - page.data()), maxv, true, best, best_score);
+                cur = hit + 4;
+              }
+            };
 
-            // Wwise RTPC name in this page.
-            const uint8_t* ph = FindBytes(page.data(), n,
-                                          reinterpret_cast<const uint8_t*>("PlayerHealth"), 12);
-            if (ph) {
-              ScanPlayerHealthRtpc(page_ptr + (ph - page.data()) - 128,
-                                   page_ptr + (ph - page.data()) + 140, best, best_score);
+            consider_float(kBe100, 100.f);
+            consider_float(kBe50, 50.f);
+            consider_float(kBe200, 200.f);
+            consider_float(kBe1, 1.f);
+            consider_int(kBeI100, 100.f);
+            consider_int(kBeI50, 50.f);
+
+            for (size_t i = 0; i + 8 <= n; i += 4) {
+              const float a = ReadBeFloat(page.data() + i);
+              const float b = ReadBeFloat(page.data() + i + 4);
+              if (!IsPlausibleHealthPair(a, b)) continue;
+              if (b < 10.f && !(b >= 0.95f && b <= 1.05f && a >= 0.5f)) continue;
+              ++pair_hits;
+              const float score = ScorePair(a, b, true);
+              if (score > best_score) {
+                best_score = score;
+                best = {};
+                best.addr = reinterpret_cast<uintptr_t>(page_ptr + i);
+                best.max_delta = 4;
+                best.be = true;
+                best.cur = a;
+                best.max = b;
+              }
             }
           }
         }
@@ -578,10 +651,10 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
       std::lock_guard lock(mu_);
       level = hints_.level_seen;
     }
-    REXLOG_INFO("HUD: scan end 0x{:x} regions={} hits={} str={} best={:.1f} level={}", win0,
-                regions, hits, str_hits, best_score, level);
+    REXLOG_INFO(
+        "HUD: scan phys+0x{:x} regions={} hits={} pairs={} nz={} str={} best={:.1f} level={}",
+        win_i * kWindow, regions, hits, pair_hits, nz_pages, str_hits, best_score, level);
 
-    // Normalize percent-style pairs to 0..100 for the HUD fill.
     auto publish_scaled = [&](HealthCandidate c, float score) {
       float cur = c.cur;
       float mx = c.max;
@@ -589,33 +662,38 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
         cur *= 100.f;
         mx = 100.f;
       }
+      c.prev_cur = cur;
+      c.bound_at = std::chrono::steady_clock::now();
+      c.changes = 0;
       const int syr = ScanSyringesNear(reinterpret_cast<uint8_t*>(c.addr), c.be);
       {
         std::lock_guard lock(mu_);
         sticky_ = c;
       }
       PublishGuest(cur, mx, syr);
-      REXLOG_INFO("HUD: BOUND health {:.1f}/{:.1f} ({}) score={:.0f} syr={}", cur, mx,
-                  c.be ? "BE" : "LE", score, syr);
+      REXLOG_INFO("HUD: BOUND health {:.1f}/{:.1f} ({}{} @{:x}) score={:.0f} syr={}", cur, mx,
+                  c.be ? "BE" : "LE", c.as_int ? "/i" : "", c.addr, score, syr);
     };
 
-    if (best_score >= 28.f && best.addr && !sticky.addr) {
+    if (best_score >= 40.f && best.addr) {
+      const bool full = LooksFullHealth(best.cur, best.max);
       bool confirmed = false;
+      bool decreased = false;
       for (const auto& prev : prev_cands_) {
-        if (prev.addr == best.addr && prev.be == best.be &&
-            std::fabs(prev.max - best.max) < 0.1f) {
-          confirmed = true;
-          break;
-        }
+        if (prev.addr != best.addr || prev.be != best.be || prev.as_int != best.as_int) continue;
+        if (std::fabs(prev.max - best.max) > 0.1f) continue;
+        if (std::fabs(prev.cur - best.cur) < 0.5f) confirmed = true;
+        if (best.cur < prev.cur - 0.5f) decreased = true;  // took damage → real pawn
       }
-      prev_cands_.clear();
       prev_cands_.push_back(best);
+      if (prev_cands_.size() > 12) prev_cands_.erase(prev_cands_.begin());
 
-      if (confirmed || best_score >= 48.f) {
+      // Instant-bind full HP; or same addr that dropped (damage proof).
+      if ((full && best_score >= 90.f) || (confirmed && full) || decreased) {
         publish_scaled(best, best_score);
       } else {
-        REXLOG_INFO("HUD: candidate {:.1f}/{:.1f} score={:.0f} — confirm", best.cur, best.max,
-                    best_score);
+        REXLOG_INFO("HUD: candidate {:.1f}/{:.1f} score={:.0f} full={} — confirm", best.cur,
+                    best.max, best_score, full);
       }
     }
 #else
@@ -624,6 +702,19 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
   }
 
 #if defined(_WIN32)
+  void ScanWorldMarkersOnly(rex::memory::Memory* mem) {
+    if (!mem || !mem->physical_membase()) return;
+    // Cheap 256 KB slice of physical RAM for level/menu path strings.
+    constexpr size_t kSlice = 0x00040000u;
+    const size_t off = (static_cast<size_t>(scan_window_++) * kSlice) % 0x20000000u;
+    uint8_t* start = mem->physical_membase() + off;
+    std::vector<uint8_t> page(0x1000);
+    for (size_t i = 0; i < kSlice; i += 0x1000) {
+      if (!SafeCopy(page.data(), start + i, 0x1000)) continue;
+      ScanMarkersInBuffer(page.data(), 0x1000, start + i);
+    }
+  }
+
   // Copy guest bytes into a private buffer. Failures return false (no thread kill).
   static bool SafeCopy(uint8_t* dst, const uint8_t* src, size_t n) {
     if (!dst || !src || n == 0) return false;
@@ -677,45 +768,6 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
     return hits;
   }
 
-  // `from`..`to` is a small guest window around a "PlayerHealth" string hit.
-  void ScanPlayerHealthRtpc(uint8_t* from, uint8_t* to, HealthCandidate& best, float& best_score) {
-    if (!from || to <= from + 8) return;
-    std::vector<uint8_t> tmp(static_cast<size_t>(to - from));
-    if (!SafeCopy(tmp.data(), from, tmp.size())) return;
-
-    for (size_t i = 0; i + 8 <= tmp.size(); i += 4) {
-      float a = 0.f, b = 0.f;
-      std::memcpy(&a, tmp.data() + i, 4);
-      std::memcpy(&b, tmp.data() + i + 4, 4);
-      // LE pair
-      if (IsPlausibleHealthPair(a, b) && std::fabs(b - 100.f) < 0.1f) {
-        const float score = ScorePair(a, b) + 40.f;
-        if (score > best_score) {
-          best_score = score;
-          best = {reinterpret_cast<uintptr_t>(from + i), 4, false, a, b};
-        }
-      }
-      // Solo LE float as RTPC
-      if (FiniteOk(a) && a > 1.f && a <= 100.f) {
-        const float score = 28.f + (a / 100.f) * 10.f;
-        if (score > best_score) {
-          best_score = score;
-          best = {reinterpret_cast<uintptr_t>(from + i), 0, false, a, 100.f};
-        }
-      }
-      // BE pair
-      a = ReadBeFloat(tmp.data() + i);
-      b = ReadBeFloat(tmp.data() + i + 4);
-      if (IsPlausibleHealthPair(a, b) && std::fabs(b - 100.f) < 0.1f) {
-        const float score = ScorePair(a, b) + 40.f;
-        if (score > best_score) {
-          best_score = score;
-          best = {reinterpret_cast<uintptr_t>(from + i), 4, true, a, b};
-        }
-      }
-    }
-  }
-
   void ConsiderAnchor(uint8_t* max_ptr, float expect_max, bool be, HealthCandidate& best,
                       float& best_score) {
     float mx = 0.f, before = 0.f, after = 0.f;
@@ -728,20 +780,23 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
     }
     if (std::fabs(mx - expect_max) > 0.1f) return;
 
-    if (IsPlausibleHealthPair(before, mx)) {
-      float score = ScorePair(before, mx);
-      if (score > best_score) {
-        best_score = score;
-        best = {reinterpret_cast<uintptr_t>(max_ptr - 4), 4, be, before, mx};
-      }
-    }
-    if (IsPlausibleHealthPair(after, mx)) {
-      float score = ScorePair(after, mx) - 1.f;
-      if (score > best_score) {
-        best_score = score;
-        best = {reinterpret_cast<uintptr_t>(max_ptr + 4), -4, be, after, mx};
-      }
-    }
+    auto take = [&](float cur, int max_delta, float bias) {
+      if (!IsPlausibleHealthPair(cur, mx)) return;
+      float score = ScorePair(cur, mx, be) + bias;
+      if (score <= best_score) return;
+      best_score = score;
+      best = {};
+      // max at max_ptr; cur is immediately before (Health,HealthMax) or after.
+      best.addr = reinterpret_cast<uintptr_t>(max_delta > 0 ? max_ptr - 4 : max_ptr + 4);
+      best.max_delta = max_delta;
+      best.be = be;
+      best.as_int = false;
+      best.cur = cur;
+      best.max = mx;
+    };
+    // UE3 APawn typically lays out Health then HealthMax → cur immediately before max.
+    take(before, 4, 2.f);
+    take(after, -4, 0.f);
   }
 
   void ConsiderIntAnchor(uint8_t* max_ptr, float expect_max, bool be, HealthCandidate& best,
@@ -755,24 +810,27 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
       return;
     }
     if (mx != static_cast<int32_t>(expect_max)) return;
-    auto take = [&](int32_t cur, int delta, float bias) {
+    auto take = [&](int32_t cur, int max_delta, float bias) {
       if (cur < 0 || cur > mx) return;
       const float fcur = static_cast<float>(cur);
       const float fmx = static_cast<float>(mx);
-      float score = ScorePair(fcur, fmx) + bias;
-      if (score > best_score) {
-        best_score = score;
-        best = {reinterpret_cast<uintptr_t>(max_ptr + delta), -delta, be, fcur, fmx};
-        // max_delta: store as int path via be flag + special delta; reread as float won't work.
-        // Reuse float reader only if we convert sticky to int mode — mark with max_delta odd.
-        best.max_delta = (delta == -4) ? 4 : -4;
-      }
+      float score = ScorePair(fcur, fmx, be) + bias - 4.f;  // slight prefer floats
+      if (score <= best_score) return;
+      best_score = score;
+      best = {};
+      best.addr = reinterpret_cast<uintptr_t>(max_delta > 0 ? max_ptr - 4 : max_ptr + 4);
+      best.max_delta = max_delta;
+      best.be = be;
+      best.as_int = true;
+      best.cur = fcur;
+      best.max = fmx;
     };
-    take(before, -4, 5.f);
-    take(after, 4, 4.f);
+    take(before, 4, 5.f);
+    take(after, -4, 3.f);
   }
 
-  bool RereadSticky(const HealthCandidate& sticky) {
+  bool RereadSticky(const HealthCandidate& sticky_in) {
+    HealthCandidate sticky = sticky_in;
     auto* p = reinterpret_cast<uint8_t*>(sticky.addr);
     MEMORY_BASIC_INFORMATION mbi{};
     if (!(VirtualQuery(p, &mbi, sizeof(mbi)) && RegionReadable(mbi))) {
@@ -785,21 +843,18 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
     float cur = 0.f, mx = sticky.max;
     __try {
       if (sticky.max_delta == 0) {
-        // Solo RTPC float.
         cur = sticky.be ? ReadBeFloat(p) : ReadLeFloat(p);
         mx = 100.f;
       } else {
         auto* pm = p + sticky.max_delta;
-        cur = sticky.be ? ReadBeFloat(p) : ReadLeFloat(p);
-        mx = sticky.be ? ReadBeFloat(pm) : ReadLeFloat(pm);
-        // If floats look garbage, try ints (int-bound candidates).
-        if (!IsPlausibleHealthPair(cur, mx)) {
+        if (sticky.as_int) {
           const int32_t ic = sticky.be ? ReadBeInt(p) : ReadLeInt(p);
           const int32_t im = sticky.be ? ReadBeInt(pm) : ReadLeInt(pm);
-          if (im >= 10 && im <= 1000 && ic >= 0 && ic <= im) {
-            cur = static_cast<float>(ic);
-            mx = static_cast<float>(im);
-          }
+          cur = static_cast<float>(ic);
+          mx = static_cast<float>(im);
+        } else {
+          cur = sticky.be ? ReadBeFloat(p) : ReadLeFloat(p);
+          mx = sticky.be ? ReadBeFloat(pm) : ReadLeFloat(pm);
         }
       }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -814,11 +869,25 @@ class HudOverlayDialog final : public rex::ui::ImGuiDialog {
       probed_ = {};
       return false;
     }
-    if (mx > 0.9f && mx < 1.1f) {
-      cur *= 100.f;
-      mx = 100.f;
+    float display_cur = cur;
+    float display_mx = mx;
+    if (display_mx > 0.9f && display_mx < 1.1f) {
+      display_cur *= 100.f;
+      display_mx = 100.f;
     }
-    PublishGuest(cur, mx, ScanSyringesNear(p, sticky.be));
+    if (sticky.prev_cur >= 0.f && std::fabs(sticky.prev_cur - display_cur) > 0.05f) {
+      sticky.changes += 1;
+      REXLOG_INFO("HUD: health live change {:.1f}->{:.1f} (n={})", sticky.prev_cur, display_cur,
+                  sticky.changes);
+    }
+    sticky.prev_cur = display_cur;
+    sticky.cur = cur;
+    sticky.max = mx;
+    {
+      std::lock_guard lock(mu_);
+      sticky_ = sticky;
+    }
+    PublishGuest(display_cur, display_mx, ScanSyringesNear(p, sticky.be));
     return true;
   }
 #endif

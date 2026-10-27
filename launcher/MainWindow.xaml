@@ -302,10 +302,19 @@
 
           <Border Style="{StaticResource SettingsCard}">
             <StackPanel>
-              <TextBlock x:Name="LblMods" Style="{StaticResource SectionHead}" Text="HUD"/>
-              <CheckBox x:Name="ChkHudMod" Content="HUD overlay (health, syringes, items)"/>
+              <TextBlock x:Name="LblMods" Style="{StaticResource SectionHead}" Text="HUD (experimental)"/>
+              <CheckBox x:Name="ChkHudMod" Content="HUD overlay — experimental (health, syringes, items)"/>
               <TextBlock x:Name="LblHudHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
-                         Text="Host ImGui HUD — fades in after boot. Health fill binds from guest memory when found."/>
+                         Text="Experimental. Host ImGui HUD — fades in after boot. Health fill may not bind reliably yet."/>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource SettingsCard}">
+            <StackPanel>
+              <TextBlock x:Name="LblAchievementsHead" Style="{StaticResource SectionHead}" Text="ACHIEVEMENTS"/>
+              <CheckBox x:Name="ChkAchievements" Content="Enable achievements" IsChecked="True"/>
+              <TextBlock x:Name="LblAchievementsHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                         Text="When on, unlocks persist under Documents\saw2\achievements and a safe text toast appears. When off, host unlocks are ignored."/>
             </StackPanel>
           </Border>
 

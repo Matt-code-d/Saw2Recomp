@@ -55,6 +55,8 @@ public sealed class LauncherSettings
     // Mods
     public bool HudMod { get; set; } = false;
     public bool HudDemo { get; set; } = false;
+    /// <summary>Host achievement unlocks under Documents\saw2\achievements.</summary>
+    public bool Achievements { get; set; } = true;
 
     // Advanced
     public bool SkipBootLogos { get; set; } = false;
@@ -264,6 +266,7 @@ public sealed class LauncherSettings
 
         args.Add(HudMod ? "--saw2_hud_mod" : "--no-saw2_hud_mod");
         args.Add("--no-saw2_hud_demo");
+        args.Add(Achievements ? "--saw2_achievements" : "--no-saw2_achievements");
 
         if (!string.IsNullOrWhiteSpace(ExtraArgs))
             args.AddRange(SplitArgs(ExtraArgs));

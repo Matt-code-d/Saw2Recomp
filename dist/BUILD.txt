@@ -1,8 +1,9 @@
-Saw2Recomp 0.1.6 — build stamp
+Saw2Recomp 0.1.7 — build stamp
 ==============================
 Config: RelWithDebInfo (win-amd64)
 Runtime: rexruntimerd.dll / rexgpu-xenosrd.dll / TracyClientrd.dll
 Do NOT replace with Debug (*d.dll) — assert storms in shader translator.
 Mouse look: rexruntimerd.dll ships with raised mnk kBaseScale (pad untouched).
-HUD: hpbar.png + hpbarline.png must sit next to saw2.exe (copied by build).
+HUD: experimental; hpbar.png + hpbarline.png must sit next to saw2.exe.
+Achievements: --saw2_achievements / --no-saw2_achievements (launcher Mods).
 Dual res: --video_mode_* (internal) vs --window_* (output).
