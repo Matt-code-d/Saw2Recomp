@@ -141,6 +141,10 @@ Some bring-up steps (function-boundary hunting, launcher wiring, crash triage) u
 
 ---
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the missing-function loop, and PR rules.
+
 ## License
 
 This repository’s original code is under the [MIT License](LICENSE) (attribution required).  
