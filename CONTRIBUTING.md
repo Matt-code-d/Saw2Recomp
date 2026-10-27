@@ -16,11 +16,20 @@ Thanks for helping. This is an unofficial Xbox 360 → PC recomp of **Saw II: Fl
 | --- | --- |
 | Missing PPC functions | Addresses from `[FATAL] Call to invalid or unregistered function at 0x…` → `config/functions.toml` |
 | Game fixes / hooks | Small, targeted changes in `src/` |
+| Mods & gameplay tweaks | QoL, cheats-as-mods, online co-op, balance experiments — see below |
 | Launcher | WPF setup/settings UX, install/language edge cases (`launcher/`) |
 | Docs | README / PROGRESS accuracy, known issues |
 | Graphics / GPU cvars | Evidence-based flags; note hitch tradeoffs (especially near water) |
 
 Large refactors, new UI frameworks, or Linux game ports need a discussion first (open an issue).
+
+## Mods / gameplay hacks
+
+Mods are welcome. Same for “hacks” in the *fun* sense — more health, FOV, QoL toggles, silly cheats, online co-op, whatever makes *your* copy more fun to play.
+
+That does **not** mean cracking, piracy, or uploading the game. If it needs disc files in the repo or a download link to an ISO, it’s a no.
+
+Ideally put new toys behind a setting (off by default), write a short PR note on what it does, and still don’t commit anything from the dump.
 
 ## Dev setup (short)
 
