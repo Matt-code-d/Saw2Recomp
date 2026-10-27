@@ -15,9 +15,8 @@ public static class GameProcess
 
         AudioBankFix.EnsureLanguageBankLinks(settings.GameDataRoot);
         MovieSubtitleFix.EnsureLanguageSubtitleLinks(settings.GameDataRoot);
-        BootLogoSkip.Restore(settings.GameDataRoot);
-        if (settings.SkipBootLogos)
-            BootLogoSkip.Apply(settings.GameDataRoot);
+        // Undo leftover .bik truncates from older launcher builds; skip is now --cl=-nostartupmovies.
+        try { BootLogoSkip.Restore(settings.GameDataRoot); } catch { /* ignore */ }
 
         var psi = new ProcessStartInfo
         {
@@ -36,19 +35,6 @@ public static class GameProcess
 
         var p = Process.Start(psi);
         if (p == null) throw new InvalidOperationException("Failed to start saw2.exe");
-
-        if (settings.SkipBootLogos)
-        {
-            var root = settings.GameDataRoot;
-            _ = Task.Run(() =>
-            {
-                try { p.WaitForExit(); }
-                catch { /* ignore */ }
-                try { BootLogoSkip.Restore(root); }
-                catch { /* ignore */ }
-            });
-        }
-
         return p;
     }
 

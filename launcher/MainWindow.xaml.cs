@@ -35,20 +35,22 @@ public partial class MainWindow : Window
         {
             ["PLAY"] = PanelPlay,
             ["SETUP"] = PanelSetup,
+            ["LANGUAGE"] = PanelLanguage,
             ["VIDEO"] = PanelVideo,
             ["AUDIO"] = PanelAudio,
             ["INPUT"] = PanelInput,
-            ["LANGUAGE"] = PanelLanguage,
+            ["MODS"] = PanelMods,
             ["ADVANCED"] = PanelAdvanced,
         };
         _nav = new Dictionary<string, Button>
         {
             ["PLAY"] = NavPlay,
             ["SETUP"] = NavSetup,
+            ["LANGUAGE"] = NavLanguage,
             ["VIDEO"] = NavVideo,
             ["AUDIO"] = NavAudio,
             ["INPUT"] = NavInput,
-            ["LANGUAGE"] = NavLanguage,
+            ["MODS"] = NavMods,
             ["ADVANCED"] = NavAdvanced,
         };
 
@@ -287,12 +289,16 @@ public partial class MainWindow : Window
     private void ApplyLocale()
     {
         Title = _l["window.title"];
+        NavGroupGame.Text = _l["nav.group.game"];
+        NavGroupSettings.Text = _l["nav.group.settings"];
+        NavGroupExtras.Text = _l["nav.group.extras"];
         NavPlay.Content = _l["nav.play"];
         NavSetup.Content = _l["nav.setup"];
+        NavLanguage.Content = _l["nav.language"];
         NavVideo.Content = _l["nav.video"];
         NavAudio.Content = _l["nav.audio"];
         NavInput.Content = _l["nav.input"];
-        NavLanguage.Content = _l["nav.language"];
+        NavMods.Content = _l["nav.mods"];
         NavAdvanced.Content = _l["nav.advanced"];
 
         LblPlayTitle.Text = _l["play.title"];
@@ -315,7 +321,10 @@ public partial class MainWindow : Window
         LblVideoTitle.Text = _l["video.title"];
         LblVideoSub.Text = _l["video.sub"];
         LblDisplayHead.Text = _l["video.display_head"];
-        LblResolution.Text = _l["video.resolution"];
+        LblInternalRes.Text = _l["video.internal"];
+        LblOutputRes.Text = _l["video.output"];
+        LblInternalHint.Text = _l["video.internal.hint"];
+        LblOutputHint.Text = _l["video.output.hint"];
         LblWinW.Text = _l["video.width"];
         LblWinH.Text = _l["video.height"];
         ChkFullscreen.Content = _l["video.fullscreen"];
@@ -367,11 +376,19 @@ public partial class MainWindow : Window
         LblLangField.Text = _l["lang.field"];
         BtnRescanLang.Content = _l["lang.rescan"];
 
-        LblAdvTitle.Text = _l["adv.title"];
-        LblAdvSub.Text = _l["adv.sub"];
+        LblModsTitle.Text = _l["mods.title"];
+        LblModsSub.Text = _l["mods.sub"];
+        LblMods.Text = _l["adv.mods"];
+        ChkHudMod.Content = _l["adv.hud_mod"];
+        LblHudHint.Text = _l["adv.hud_hint"];
         LblBoot.Text = _l["adv.boot"];
         ChkSkipBoot.Content = _l["adv.skip_boot"];
         LblSkipHint.Text = _l["adv.skip_hint"];
+
+        LblAdvTitle.Text = _l["adv.title"];
+        LblAdvSub.Text = _l["adv.sub"];
+        LblLogHead.Text = _l["adv.log_head"];
+        LblDevHead.Text = _l["adv.dev_head"];
         LblLogLevel.Text = _l["adv.log_level"];
         ChkVerbose.Content = _l["adv.verbose"];
         ChkLogFile.Content = _l["adv.logfile"];
@@ -422,9 +439,10 @@ public partial class MainWindow : Window
         TxtExe.Text = _settings.GameExePath;
         TxtGame.Text = _settings.GameDataRoot;
 
-        SelectCombo(CmbResolution, _settings.Resolution);
-        TxtWinW.Text = _settings.WindowWidth.ToString();
-        TxtWinH.Text = _settings.WindowHeight.ToString();
+        _settings.MigrateResolutionFields();
+        SelectCombo(CmbInternalRes, _settings.InternalResolution);
+        SelectCombo(CmbOutputRes, _settings.OutputResolution);
+        RefreshOutputPxLabel();
         ChkFullscreen.IsChecked = _settings.Fullscreen;
         ChkLetterbox.IsChecked = _settings.PresentLetterbox;
         ChkDither.IsChecked = _settings.PresentDither;
@@ -462,6 +480,7 @@ public partial class MainWindow : Window
         }
 
         ChkSkipBoot.IsChecked = _settings.SkipBootLogos;
+        ChkHudMod.IsChecked = _settings.HudMod;
         SelectCombo(CmbLogLevel, _settings.LogLevel);
         ChkVerbose.IsChecked = _settings.VerboseLog;
         ChkLogFile.IsChecked = _settings.WriteLogFile;
@@ -473,9 +492,11 @@ public partial class MainWindow : Window
     {
         _settings.GameDataRoot = TxtInstallTo.Text.Trim();
         _settings.GameExePath = TxtExe.Text.Trim();
-        _settings.Resolution = ComboValue(CmbResolution);
-        _ = int.TryParse(TxtWinW.Text, out var ww); _settings.WindowWidth = ww > 0 ? ww : 1920;
-        _ = int.TryParse(TxtWinH.Text, out var wh); _settings.WindowHeight = wh > 0 ? wh : 1080;
+        _settings.InternalResolution = ComboValue(CmbInternalRes);
+        _settings.OutputResolution = ComboValue(CmbOutputRes);
+        _settings.ApplyInternalResolution();
+        _settings.ApplyOutputResolution();
+        RefreshOutputPxLabel();
         _settings.Fullscreen = ChkFullscreen.IsChecked == true;
         _settings.PresentLetterbox = ChkLetterbox.IsChecked == true;
         _settings.PresentDither = ChkDither.IsChecked == true;
@@ -513,6 +534,8 @@ public partial class MainWindow : Window
             _settings.UserLanguage = lang.Id;
 
         _settings.SkipBootLogos = ChkSkipBoot.IsChecked == true;
+        _settings.HudMod = ChkHudMod.IsChecked == true;
+        _settings.HudDemo = false;
         _settings.LogLevel = ComboValue(CmbLogLevel);
         _settings.VerboseLog = ChkVerbose.IsChecked == true;
         _settings.WriteLogFile = ChkLogFile.IsChecked == true;
@@ -530,6 +553,28 @@ public partial class MainWindow : Window
         // Keep guest clock scaled — uncapped rates make Saw II run fast.
         _settings.ClockNoScaling = false;
         ChkClockNoScale.IsChecked = false;
+    }
+
+    private void InternalRes_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiReady) return;
+        _settings.InternalResolution = ComboValue(CmbInternalRes);
+        _settings.ApplyInternalResolution();
+    }
+
+    private void OutputRes_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiReady) return;
+        _settings.OutputResolution = ComboValue(CmbOutputRes);
+        _settings.ApplyOutputResolution();
+        RefreshOutputPxLabel();
+    }
+
+    private void RefreshOutputPxLabel()
+    {
+        TxtWinW.Text = _settings.WindowWidth.ToString();
+        TxtWinH.Text = _settings.WindowHeight.ToString();
+        TxtOutputPx.Text = $"{_settings.WindowWidth} × {_settings.WindowHeight}";
     }
 
     private void FpsPreset_Changed(object sender, SelectionChangedEventArgs e)

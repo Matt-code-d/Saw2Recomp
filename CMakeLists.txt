@@ -16,15 +16,28 @@ set(SAW2_SOURCES
     src/stubs.cpp
     src/math_polyfill.cpp
     src/ue3_framerate_unlock.cpp
+    src/saw2_hud_mod.cpp
 )
 
 if(WIN32)
+    list(APPEND SAW2_SOURCES src/saw2.rc)
     add_executable(saw2 WIN32 ${SAW2_SOURCES})
 else()
     add_executable(saw2 ${SAW2_SOURCES})
 endif()
 
 rexglue_setup_target(saw2 GPU_PLUGINS xenos)
+
+# HUD art next to saw2.exe (hpbar frame + fill line).
+add_custom_command(TARGET saw2 POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/hpbar.png"
+        "$<TARGET_FILE_DIR:saw2>/hpbar.png"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/hpbarline.png"
+        "$<TARGET_FILE_DIR:saw2>/hpbarline.png"
+    COMMENT "Copying HUD hpbar assets next to saw2.exe"
+    VERBATIM)
 
 # Publish the WPF launcher next to saw2.exe (Windows).
 option(SAW2_BUILD_LAUNCHER "Build Saw2Launcher into the same folder as saw2.exe" ON)

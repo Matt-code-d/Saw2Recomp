@@ -14,7 +14,12 @@ public sealed class LauncherSettings
     public string UiLocale { get; set; } = "en";
 
     // Video / display
+    /// <summary>Legacy single preset — migrated into Internal + Output on load.</summary>
     public string Resolution { get; set; } = "1080p";
+    /// <summary>Guest render / video mode (what the title draws at).</summary>
+    public string InternalResolution { get; set; } = "1080p";
+    /// <summary>Host window / fullscreen output size (upscale target).</summary>
+    public string OutputResolution { get; set; } = "1080p";
     public int WindowWidth { get; set; } = 1920;
     public int WindowHeight { get; set; } = 1080;
     public bool Fullscreen { get; set; } = true;
@@ -47,6 +52,10 @@ public sealed class LauncherSettings
     /// <summary>ReXGlue keybind_* → key name(s). Empty map uses catalog defaults when M&amp;K is on.</summary>
     public Dictionary<string, string> Keybinds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    // Mods
+    public bool HudMod { get; set; } = false;
+    public bool HudDemo { get; set; } = false;
+
     // Advanced
     public bool SkipBootLogos { get; set; } = false;
     public string LogLevel { get; set; } = "info";
@@ -72,7 +81,9 @@ public sealed class LauncherSettings
         try
         {
             var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<LauncherSettings>(json, JsonOpts()) ?? new LauncherSettings();
+            var s = JsonSerializer.Deserialize<LauncherSettings>(json, JsonOpts()) ?? new LauncherSettings();
+            s.MigrateResolutionFields();
+            return s;
         }
         catch
         {
@@ -80,11 +91,75 @@ public sealed class LauncherSettings
         }
     }
 
+    /// <summary>Old saves only had Resolution — split into internal + output.</summary>
+    public void MigrateResolutionFields()
+    {
+        var legacy = string.IsNullOrWhiteSpace(Resolution) ? "1080p" : Resolution.Trim();
+        if (string.IsNullOrWhiteSpace(InternalResolution))
+            InternalResolution = legacy;
+        if (string.IsNullOrWhiteSpace(OutputResolution))
+        {
+            // Prefer stored window size if it maps to a known preset.
+            OutputResolution = MatchPreset(WindowWidth, WindowHeight) ?? legacy;
+        }
+        ApplyOutputResolution();
+    }
+
+    static string? MatchPreset(int w, int h)
+    {
+        foreach (var p in new[] { "720p", "1080p", "1440p", "4k", "1280x720", "1920x1080", "2560x1440", "3840x2160" })
+        {
+            var (pw, ph) = ParseResolutionPreset(p);
+            if (pw == w && ph == h) return p is "1280x720" ? "720p" : p is "1920x1080" ? "1080p" : p is "2560x1440" ? "1440p" : p is "3840x2160" ? "4k" : p;
+        }
+        return null;
+    }
+
     public void Save(string? path = null)
     {
         path ??= DefaultPath();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOpts()));
+    }
+
+    /// <summary>Map preset / freeform resolution string to pixel size.</summary>
+    public static (int w, int h) ParseResolutionPreset(string resolution)
+    {
+        var key = (resolution ?? "").Trim().ToLowerInvariant()
+            .Replace(" ", "").Replace("_", "").Replace("-", "");
+        return key switch
+        {
+            "480p" => (640, 480),
+            "540p" => (960, 540),
+            "720p" or "1280x720" => (1280, 720),
+            "900p" => (1600, 900),
+            "1080p" or "1920x1080" => (1920, 1080),
+            "1440p" or "2560x1440" => (2560, 1440),
+            "1800p" => (3200, 1800),
+            "2160p" or "4k" or "3840x2160" => (3840, 2160),
+            _ => TryParseWxH(key, out var w, out var h) ? (w, h) : (1920, 1080),
+        };
+    }
+
+    static bool TryParseWxH(string key, out int w, out int h)
+    {
+        w = h = 0;
+        var x = key.IndexOf('x');
+        if (x <= 0 || x >= key.Length - 1) return false;
+        return int.TryParse(key[..x], out w) && int.TryParse(key[(x + 1)..], out h) && w > 0 && h > 0;
+    }
+
+    public void ApplyInternalResolution()
+    {
+        // Kept for UI symmetry; guest size is resolved at launch from InternalResolution.
+        Resolution = InternalResolution;
+    }
+
+    public void ApplyOutputResolution()
+    {
+        var (w, h) = ParseResolutionPreset(OutputResolution);
+        WindowWidth = w;
+        WindowHeight = h;
     }
 
     public List<string> ToProcessArguments()
@@ -96,9 +171,20 @@ public sealed class LauncherSettings
         args.Add($"--gpu_plugin={GpuPlugin}");
         args.Add($"--user_language={UserLanguage}");
         args.Add($"--user_country={UserCountry}");
-        args.Add($"--resolution={Resolution}");
-        args.Add($"--window_width={WindowWidth}");
-        args.Add($"--window_height={WindowHeight}");
+
+        // Internal = guest video mode (what the game renders).
+        // Output = host window / fullscreen (upscale target for FSR/CAS/bilinear).
+        MigrateResolutionFields();
+        var (iw, ih) = ParseResolutionPreset(InternalResolution);
+        var (ow, oh) = ParseResolutionPreset(OutputResolution);
+        WindowWidth = ow;
+        WindowHeight = oh;
+        args.Add($"--video_mode_width={iw}");
+        args.Add($"--video_mode_height={ih}");
+        args.Add($"--window_width={ow}");
+        args.Add($"--window_height={oh}");
+        // Optional alias some ReXGlue paths still read; keep aligned with INTERNAL.
+        args.Add($"--resolution={InternalResolution}");
         args.Add(Fullscreen ? "--fullscreen" : "--no-fullscreen");
         args.Add($"--monitor={Monitor}");
         args.Add($"--video_mode_refresh_rate={RefreshRate}");
@@ -170,6 +256,14 @@ public sealed class LauncherSettings
                 "saw2", "saw2.log");
             args.Add($"--log_file={log}");
         }
+
+        // UE3: same switch SawGameFix uses on Saw 1 PC — skips startup logo movies.
+        // ReXGlue forwards this onto the guest Default.xex command line via --cl=.
+        if (SkipBootLogos)
+            args.Add("--cl=-nostartupmovies");
+
+        args.Add(HudMod ? "--saw2_hud_mod" : "--no-saw2_hud_mod");
+        args.Add("--no-saw2_hud_demo");
 
         if (!string.IsNullOrWhiteSpace(ExtraArgs))
             args.AddRange(SplitArgs(ExtraArgs));

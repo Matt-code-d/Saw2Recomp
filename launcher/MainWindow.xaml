@@ -15,7 +15,7 @@
     <Border Grid.Column="0" Background="#0A0C0E" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Margin="16,24,14,20">
-          <Image Source="pack://application:,,,/Assets/logo.png"
+          <Image Source="pack://application:,,,/Assets/logoLaunch.png"
                  Stretch="Uniform"
                  SnapsToDevicePixels="True"
                  RenderOptions.BitmapScalingMode="HighQuality"
@@ -27,19 +27,39 @@
           <TextBlock x:Name="StatusLang" Text="" FontSize="11" Foreground="{StaticResource Mute}" Margin="0,4,0,0"/>
         </StackPanel>
 
-        <StackPanel>
-          <Button x:Name="NavPlay" Style="{StaticResource NavBtn}" Content="PLAY" Click="Nav_Click" Tag="active"/>
-          <Button x:Name="NavSetup" Style="{StaticResource NavBtn}" Content="SETUP / ISO" Click="Nav_Click"/>
-          <Button x:Name="NavVideo" Style="{StaticResource NavBtn}" Content="VIDEO" Click="Nav_Click"/>
-          <Button x:Name="NavAudio" Style="{StaticResource NavBtn}" Content="AUDIO" Click="Nav_Click"/>
-          <Button x:Name="NavInput" Style="{StaticResource NavBtn}" Content="INPUT" Click="Nav_Click"/>
-          <Button x:Name="NavLanguage" Style="{StaticResource NavBtn}" Content="LANGUAGE" Click="Nav_Click"/>
-          <Button x:Name="NavAdvanced" Style="{StaticResource NavBtn}" Content="ADVANCED" Click="Nav_Click"/>
-        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock x:Name="NavGroupGame" Style="{StaticResource NavGroupLabel}" Text="GAME"/>
+            <Button x:Name="NavPlay" Style="{StaticResource NavBtn}" Content="PLAY" Click="Nav_Click" Tag="active"/>
+            <Button x:Name="NavSetup" Style="{StaticResource NavBtn}" Content="SETUP / ISO" Click="Nav_Click"/>
+            <Button x:Name="NavLanguage" Style="{StaticResource NavBtn}" Content="LANGUAGE" Click="Nav_Click"/>
+
+            <TextBlock x:Name="NavGroupSettings" Style="{StaticResource NavGroupLabel}" Text="SETTINGS"/>
+            <Button x:Name="NavVideo" Style="{StaticResource NavBtn}" Content="VIDEO" Click="Nav_Click"/>
+            <Button x:Name="NavAudio" Style="{StaticResource NavBtn}" Content="AUDIO" Click="Nav_Click"/>
+            <Button x:Name="NavInput" Style="{StaticResource NavBtn}" Content="CONTROLS" Click="Nav_Click"/>
+
+            <TextBlock x:Name="NavGroupExtras" Style="{StaticResource NavGroupLabel}" Text="EXTRAS"/>
+            <Button x:Name="NavMods" Style="{StaticResource NavBtn}" Content="MODS" Click="Nav_Click"/>
+            <Button x:Name="NavAdvanced" Style="{StaticResource NavBtn}" Content="ADVANCED" Click="Nav_Click"/>
+          </StackPanel>
+        </ScrollViewer>
       </DockPanel>
     </Border>
 
-    <Grid Grid.Column="1" Margin="36,28,36,24">
+    <Grid Grid.Column="1">
+      <!-- Billy fades in from the top-right; black left side leaves room for copy. -->
+      <Image Source="pack://application:,,,/Assets/billy-corner.png"
+             HorizontalAlignment="Right"
+             VerticalAlignment="Top"
+             Width="460"
+             Stretch="Uniform"
+             Opacity="0.72"
+             IsHitTestVisible="False"
+             SnapsToDevicePixels="True"
+             RenderOptions.BitmapScalingMode="HighQuality"
+             Margin="0,-8,-8,0"/>
+      <Grid Margin="36,28,36,24">
       <DockPanel x:Name="PanelPlay" Visibility="Visible">
         <StackPanel DockPanel.Dock="Top">
           <TextBlock x:Name="LblPlayTitle" Style="{StaticResource SectionTitle}" Text="Play"/>
@@ -97,110 +117,141 @@
       </DockPanel>
 
       <ScrollViewer x:Name="PanelVideo" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-        <StackPanel>
+        <StackPanel Margin="0,0,8,12">
           <TextBlock x:Name="LblVideoTitle" Style="{StaticResource SectionTitle}" Text="Video"/>
-          <TextBlock x:Name="LblVideoSub" Style="{StaticResource SectionSub}" Text="Screen size, frame rate and image scaling."/>
+          <TextBlock x:Name="LblVideoSub" Style="{StaticResource SectionSub}" Text="Internal render, output size, frame rate and upscaling."/>
 
-          <TextBlock x:Name="LblDisplayHead" Style="{StaticResource SectionHead}" Text="DISPLAY" Margin="0,0,0,8"/>
-          <TextBlock x:Name="LblResolution" Style="{StaticResource FieldLabel}" Text="RESOLUTION PRESET"/>
-          <ComboBox x:Name="CmbResolution" Margin="0,0,0,14">
-            <ComboBoxItem Content="720p"/>
-            <ComboBoxItem Content="1080p" IsSelected="True"/>
-            <ComboBoxItem Content="1440p"/>
-            <ComboBoxItem Content="4k"/>
-            <ComboBoxItem Content="1280x720"/>
-            <ComboBoxItem Content="1920x1080"/>
-            <ComboBoxItem Content="2560x1440"/>
-            <ComboBoxItem Content="3840x2160"/>
-          </ComboBox>
-
-          <Grid Margin="0,0,0,14">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="16"/>
-              <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-              <TextBlock x:Name="LblWinW" Style="{StaticResource FieldLabel}" Text="WINDOW WIDTH"/>
-              <TextBox x:Name="TxtWinW" Text="1920"/>
+          <Border Style="{StaticResource SettingsCard}">
+            <StackPanel>
+              <TextBlock x:Name="LblDisplayHead" Style="{StaticResource SectionHead}" Text="DISPLAY"/>
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="16"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                  <TextBlock x:Name="LblInternalRes" Style="{StaticResource FieldLabel}" Text="INTERNAL RESOLUTION"/>
+                  <ComboBox x:Name="CmbInternalRes" SelectionChanged="InternalRes_Changed">
+                    <ComboBoxItem Content="720p"/>
+                    <ComboBoxItem Content="1080p" IsSelected="True"/>
+                    <ComboBoxItem Content="1440p"/>
+                    <ComboBoxItem Content="4k"/>
+                    <ComboBoxItem Content="1280x720"/>
+                    <ComboBoxItem Content="1920x1080"/>
+                    <ComboBoxItem Content="2560x1440"/>
+                    <ComboBoxItem Content="3840x2160"/>
+                  </ComboBox>
+                  <TextBlock x:Name="LblInternalHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
+                             Text="What the game draws. Lower = more FPS."/>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock x:Name="LblOutputRes" Style="{StaticResource FieldLabel}" Text="OUTPUT RESOLUTION"/>
+                  <ComboBox x:Name="CmbOutputRes" SelectionChanged="OutputRes_Changed">
+                    <ComboBoxItem Content="720p"/>
+                    <ComboBoxItem Content="1080p" IsSelected="True"/>
+                    <ComboBoxItem Content="1440p"/>
+                    <ComboBoxItem Content="4k"/>
+                    <ComboBoxItem Content="1280x720"/>
+                    <ComboBoxItem Content="1920x1080"/>
+                    <ComboBoxItem Content="2560x1440"/>
+                    <ComboBoxItem Content="3840x2160"/>
+                  </ComboBox>
+                  <TextBlock x:Name="LblOutputHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
+                             Text="Window / fullscreen on your monitor."/>
+                  <TextBlock x:Name="TxtOutputPx" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,0" FontFamily="Consolas" Text="1920 × 1080"/>
+                  <!-- Kept for code paths that still read width/height boxes. -->
+                  <TextBox x:Name="TxtWinW" Text="1920" Visibility="Collapsed"/>
+                  <TextBox x:Name="TxtWinH" Text="1080" Visibility="Collapsed"/>
+                  <TextBlock x:Name="LblWinW" Visibility="Collapsed"/>
+                  <TextBlock x:Name="LblWinH" Visibility="Collapsed"/>
+                </StackPanel>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                <CheckBox x:Name="ChkFullscreen" Content="Fullscreen" IsChecked="True" Margin="0,0,18,0"/>
+                <CheckBox x:Name="ChkLetterbox" Content="Letterbox" IsChecked="True" Margin="0,0,18,0"/>
+                <CheckBox x:Name="ChkDither" Content="Present dither"/>
+              </StackPanel>
+              <DockPanel Margin="0,10,0,0">
+                <TextBlock x:Name="LblMonitor" Style="{StaticResource FieldLabel}" Text="MONITOR" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBox x:Name="TxtMonitor" Text="0" Width="64" HorizontalAlignment="Left"/>
+              </DockPanel>
             </StackPanel>
-            <StackPanel Grid.Column="2">
-              <TextBlock x:Name="LblWinH" Style="{StaticResource FieldLabel}" Text="WINDOW HEIGHT"/>
-              <TextBox x:Name="TxtWinH" Text="1080"/>
+          </Border>
+
+          <Border Style="{StaticResource SettingsCard}">
+            <StackPanel>
+              <TextBlock x:Name="LblVsyncSection" Style="{StaticResource SectionHead}" Text="FRAME RATE"/>
+              <TextBlock x:Name="LblFps" Style="{StaticResource FieldLabel}" Text="TARGET FPS"/>
+              <ComboBox x:Name="CmbFpsPreset" Width="160" HorizontalAlignment="Left" SelectionChanged="FpsPreset_Changed">
+                <ComboBoxItem Content="30" Tag="30"/>
+                <ComboBoxItem Content="60" Tag="60" IsSelected="True"/>
+              </ComboBox>
+              <TextBlock x:Name="LblFpsHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,6,0,10" TextWrapping="Wrap"
+                         Text="30 = original pacing. 60 = smoother. Higher rates make UE3 run accelerated."/>
+              <StackPanel Orientation="Horizontal">
+                <CheckBox x:Name="ChkVSync" Content="V-Sync" IsChecked="True" Margin="0,0,18,0"/>
+                <CheckBox x:Name="ChkTearing" Content="Allow VRR / tearing"/>
+              </StackPanel>
+              <CheckBox x:Name="ChkClockNoScale" Content="Unlock guest clock" Visibility="Collapsed"/>
+              <StackPanel x:Name="PanelCustomFps" Visibility="Collapsed">
+                <TextBox x:Name="TxtRefresh" Text="60"/>
+              </StackPanel>
             </StackPanel>
-          </Grid>
+          </Border>
 
-          <CheckBox x:Name="ChkFullscreen" Content="Fullscreen" IsChecked="True"/>
-          <CheckBox x:Name="ChkLetterbox" Content="Letterbox (keep aspect)" IsChecked="True"/>
-          <CheckBox x:Name="ChkDither" Content="Present dither"/>
+          <Border Style="{StaticResource SettingsCard}">
+            <StackPanel>
+              <TextBlock x:Name="LblUpscale" Style="{StaticResource SectionHead}" Text="UPSCALING"/>
+              <ComboBox x:Name="CmbPresentEffect" Width="220" HorizontalAlignment="Left" SelectionChanged="PresentEffect_Changed">
+                <ComboBoxItem Content="bilinear" IsSelected="True"/>
+                <ComboBoxItem Content="cas"/>
+                <ComboBoxItem Content="fsr"/>
+                <ComboBoxItem Content="fsr2"/>
+                <ComboBoxItem Content="fsr3"/>
+              </ComboBox>
+              <TextBlock x:Name="TxtUpscaleNote" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,6,0,8" TextWrapping="Wrap"
+                         Text="Use when output &gt; internal. Bilinear is safest; FSR/CAS need FidelityFX."/>
 
-          <TextBlock x:Name="LblMonitor" Style="{StaticResource FieldLabel}" Text="MONITOR INDEX" Margin="0,12,0,4"/>
-          <TextBox x:Name="TxtMonitor" Text="0" Width="80" HorizontalAlignment="Left"/>
+              <StackPanel x:Name="PanelFsr" Visibility="Collapsed" Margin="0,4,0,0">
+                <TextBlock x:Name="LblFsrQuality" Style="{StaticResource FieldLabel}" Text="FSR QUALITY MODE"/>
+                <ComboBox x:Name="CmbFsrQuality" Width="220" HorizontalAlignment="Left" Margin="0,0,0,10">
+                  <ComboBoxItem Content="auto" IsSelected="True"/>
+                  <ComboBoxItem Content="ultra_quality"/>
+                  <ComboBoxItem Content="quality"/>
+                  <ComboBoxItem Content="balanced"/>
+                  <ComboBoxItem Content="performance"/>
+                </ComboBox>
+                <TextBlock x:Name="LblFsrSharp" Style="{StaticResource FieldLabel}" Text="FSR SHARPNESS REDUCTION"/>
+                <Slider x:Name="SldFsrSharp" Minimum="0" Maximum="1" Value="0.2" TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="0,0,0,4"/>
+                <TextBlock x:Name="TxtFsrSharp" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,0,0,10"/>
+                <TextBlock x:Name="LblFsrPasses" Style="{StaticResource FieldLabel}" Text="FSR MAX UPSAMPLING PASSES"/>
+                <TextBox x:Name="TxtFsrPasses" Text="4" Width="80" HorizontalAlignment="Left"/>
+              </StackPanel>
 
-          <TextBlock x:Name="LblVsyncSection" Style="{StaticResource SectionHead}" Text="FRAME RATE"/>
-          <TextBlock x:Name="LblFps" Style="{StaticResource FieldLabel}" Text="TARGET FPS"/>
-          <ComboBox x:Name="CmbFpsPreset" Width="220" HorizontalAlignment="Left" SelectionChanged="FpsPreset_Changed">
-            <ComboBoxItem Content="30" Tag="30"/>
-            <ComboBoxItem Content="60" Tag="60" IsSelected="True"/>
-          </ComboBox>
-          <TextBlock x:Name="LblFpsHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,8" TextWrapping="Wrap"
-                     Text="Saw II game logic is tied to frame pacing. Use 30 for the original feel, or 60 for smoother play — higher rates make the game run fast."/>
-
-          <CheckBox x:Name="ChkVSync" Content="V-Sync" IsChecked="True"/>
-          <CheckBox x:Name="ChkTearing" Content="Allow VRR / tearing (D3D12)"/>
-          <!-- Kept for ExtraArgs / power users; not needed for 30/60. -->
-          <CheckBox x:Name="ChkClockNoScale" Content="Unlock guest clock" Visibility="Collapsed"/>
-          <!-- Hidden leftovers referenced by code paths that migrate old settings. -->
-          <StackPanel x:Name="PanelCustomFps" Visibility="Collapsed">
-            <TextBox x:Name="TxtRefresh" Text="60"/>
-          </StackPanel>
-
-          <TextBlock x:Name="LblUpscale" Style="{StaticResource SectionHead}" Text="UPSCALING"/>
-          <ComboBox x:Name="CmbPresentEffect" Width="260" HorizontalAlignment="Left" SelectionChanged="PresentEffect_Changed">
-            <ComboBoxItem Content="bilinear" IsSelected="True"/>
-            <ComboBoxItem Content="cas"/>
-            <ComboBoxItem Content="fsr"/>
-            <ComboBoxItem Content="fsr2"/>
-            <ComboBoxItem Content="fsr3"/>
-          </ComboBox>
-          <TextBlock x:Name="TxtUpscaleNote" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,8" TextWrapping="Wrap"
-                     Text="Bilinear is the reliable option. FSR/CAS need a FidelityFX-enabled build — values are still passed for forward-compat."/>
-
-          <StackPanel x:Name="PanelFsr" Visibility="Collapsed" Margin="0,4,0,0">
-            <TextBlock x:Name="LblFsrQuality" Style="{StaticResource FieldLabel}" Text="FSR QUALITY MODE"/>
-            <ComboBox x:Name="CmbFsrQuality" Width="220" HorizontalAlignment="Left" Margin="0,0,0,10">
-              <ComboBoxItem Content="auto" IsSelected="True"/>
-              <ComboBoxItem Content="ultra_quality"/>
-              <ComboBoxItem Content="quality"/>
-              <ComboBoxItem Content="balanced"/>
-              <ComboBoxItem Content="performance"/>
-            </ComboBox>
-
-            <TextBlock x:Name="LblFsrSharp" Style="{StaticResource FieldLabel}" Text="FSR SHARPNESS REDUCTION"/>
-            <Slider x:Name="SldFsrSharp" Minimum="0" Maximum="1" Value="0.2" TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="0,0,0,4"/>
-            <TextBlock x:Name="TxtFsrSharp" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,0,0,10"/>
-
-            <TextBlock x:Name="LblFsrPasses" Style="{StaticResource FieldLabel}" Text="FSR MAX UPSAMPLING PASSES"/>
-            <TextBox x:Name="TxtFsrPasses" Text="4" Width="80" HorizontalAlignment="Left" Margin="0,0,0,10"/>
-          </StackPanel>
-
-          <StackPanel x:Name="PanelCas" Visibility="Collapsed" Margin="0,4,0,0">
-            <TextBlock x:Name="LblCasSharp" Style="{StaticResource FieldLabel}" Text="CAS ADDITIONAL SHARPNESS"/>
-            <Slider x:Name="SldCasSharp" Minimum="0" Maximum="1" Value="0" TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="0,0,0,4"/>
-            <TextBlock x:Name="TxtCasSharp" Foreground="{StaticResource Mute}" FontSize="11"/>
-          </StackPanel>
+              <StackPanel x:Name="PanelCas" Visibility="Collapsed" Margin="0,4,0,0">
+                <TextBlock x:Name="LblCasSharp" Style="{StaticResource FieldLabel}" Text="CAS ADDITIONAL SHARPNESS"/>
+                <Slider x:Name="SldCasSharp" Minimum="0" Maximum="1" Value="0" TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="0,0,0,4"/>
+                <TextBlock x:Name="TxtCasSharp" Foreground="{StaticResource Mute}" FontSize="11"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
 
       <StackPanel x:Name="PanelAudio" Visibility="Collapsed">
         <TextBlock x:Name="LblAudioTitle" Style="{StaticResource SectionTitle}" Text="Audio"/>
         <TextBlock x:Name="LblAudioSub" Style="{StaticResource SectionSub}" Text="Volume and buffering for the PC audio path."/>
-        <CheckBox x:Name="ChkMute" Content="Mute"/>
-        <TextBlock x:Name="LblAudioQueue" Style="{StaticResource FieldLabel}" Text="BUFFER (QUEUED FRAMES, 4–64)" Margin="0,12,0,4"/>
-        <Slider x:Name="SldAudioQ" Minimum="4" Maximum="64" Value="8" TickFrequency="1" IsSnapToTickEnabled="True" Width="280" HorizontalAlignment="Left"/>
-        <TextBlock x:Name="TxtAudioQ" Foreground="{StaticResource Mute}" Margin="0,4,0,0"/>
-        <TextBlock x:Name="LblAudioHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"
-                   Text="Raise the buffer if you hear crackling; lower it for less latency."/>
+        <Border Style="{StaticResource SettingsCard}">
+          <StackPanel>
+            <CheckBox x:Name="ChkMute" Content="Mute"/>
+            <TextBlock x:Name="LblAudioQueue" Style="{StaticResource FieldLabel}" Text="BUFFER (QUEUED FRAMES, 4–64)" Margin="0,10,0,4"/>
+            <Slider x:Name="SldAudioQ" Minimum="4" Maximum="64" Value="8" TickFrequency="1" IsSnapToTickEnabled="True" Width="280" HorizontalAlignment="Left"/>
+            <TextBlock x:Name="TxtAudioQ" Foreground="{StaticResource Mute}" Margin="0,4,0,0"/>
+            <TextBlock x:Name="LblAudioHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"
+                       Text="Raise the buffer if you hear crackling; lower it for less latency."/>
+          </StackPanel>
+        </Border>
       </StackPanel>
 
       <ScrollViewer x:Name="PanelInput" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
@@ -249,36 +300,66 @@
         <TextBlock x:Name="TxtLangHint" Margin="0,16,0,0" Foreground="{StaticResource Mute}" TextWrapping="Wrap"/>
       </StackPanel>
 
+      <ScrollViewer x:Name="PanelMods" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,8,12">
+          <TextBlock x:Name="LblModsTitle" Style="{StaticResource SectionTitle}" Text="Mods"/>
+          <TextBlock x:Name="LblModsSub" Style="{StaticResource SectionSub}" Text="Optional host overlays and boot tweaks."/>
+
+          <Border Style="{StaticResource SettingsCard}">
+            <StackPanel>
+              <TextBlock x:Name="LblMods" Style="{StaticResource SectionHead}" Text="HUD"/>
+              <CheckBox x:Name="ChkHudMod" Content="HUD overlay (health, syringes, items)"/>
+              <TextBlock x:Name="LblHudHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                         Text="Host ImGui HUD — fades in after boot. Health fill binds from guest memory when found."/>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource SettingsCard}">
+            <StackPanel>
+              <TextBlock x:Name="LblBoot" Style="{StaticResource SectionHead}" Text="BOOT"/>
+              <CheckBox x:Name="ChkSkipBoot" Content="Skip startup logo movies (-nostartupmovies)"/>
+              <TextBlock x:Name="LblSkipHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                         Text="Passes UE3 -nostartupmovies on the guest command line. No .bik files are modified."/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
       <ScrollViewer x:Name="PanelAdvanced" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-        <StackPanel>
+        <StackPanel Margin="0,0,8,12">
           <TextBlock x:Name="LblAdvTitle" Style="{StaticResource SectionTitle}" Text="Advanced"/>
           <TextBlock x:Name="LblAdvSub" Style="{StaticResource SectionSub}" Text="Logging and raw ReXGlue flags."/>
 
-          <TextBlock x:Name="LblBoot" Style="{StaticResource FieldLabel}" Text="BOOT"/>
-          <CheckBox x:Name="ChkSkipBoot" Content="Skip unskippable company logos (Konami / Zombie / Lionsgate / Twisted)"/>
-          <TextBlock x:Name="LblSkipHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,0,0,14" TextWrapping="Wrap"
-                     Text="Only Konami/Zombie/Lionsgate/Twisted. Keeps the real logo but cuts each .bik to 2 frames (flash). Saw2Mid / level intros stay. Restored on exit."/>
+          <Border Style="{StaticResource SettingsCard}">
+            <StackPanel>
+              <TextBlock x:Name="LblLogHead" Style="{StaticResource SectionHead}" Text="LOGGING"/>
+              <TextBlock x:Name="LblLogLevel" Style="{StaticResource FieldLabel}" Text="LOG LEVEL"/>
+              <ComboBox x:Name="CmbLogLevel" Width="160" HorizontalAlignment="Left" Margin="0,0,0,10">
+                <ComboBoxItem Content="error"/>
+                <ComboBoxItem Content="warn"/>
+                <ComboBoxItem Content="info" IsSelected="True"/>
+                <ComboBoxItem Content="debug"/>
+                <ComboBoxItem Content="trace"/>
+              </ComboBox>
+              <CheckBox x:Name="ChkVerbose" Content="Verbose (--verbose)"/>
+              <CheckBox x:Name="ChkLogFile" Content="Write log to Documents\saw2\saw2.log" IsChecked="True"/>
+            </StackPanel>
+          </Border>
 
-          <TextBlock x:Name="LblLogLevel" Style="{StaticResource FieldLabel}" Text="LOG LEVEL"/>
-          <ComboBox x:Name="CmbLogLevel" Width="160" HorizontalAlignment="Left" Margin="0,0,0,12">
-            <ComboBoxItem Content="error"/>
-            <ComboBoxItem Content="warn"/>
-            <ComboBoxItem Content="info" IsSelected="True"/>
-            <ComboBoxItem Content="debug"/>
-            <ComboBoxItem Content="trace"/>
-          </ComboBox>
-          <CheckBox x:Name="ChkVerbose" Content="Verbose (--verbose)"/>
-          <CheckBox x:Name="ChkLogFile" Content="Write log to Documents\saw2\saw2.log" IsChecked="True"/>
-
-          <TextBlock x:Name="LblCountry" Style="{StaticResource FieldLabel}" Text="USER COUNTRY ID" Margin="0,14,0,4"/>
-          <TextBox x:Name="TxtCountry" Text="103" Width="100" HorizontalAlignment="Left"/>
-
-          <TextBlock x:Name="LblExtra" Style="{StaticResource FieldLabel}" Text="EXTRA ARGS" Margin="0,14,0,4"/>
-          <TextBox x:Name="TxtExtra" AcceptsReturn="False" FontFamily="Consolas"/>
-          <TextBlock x:Name="LblExtraHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,6,0,0"
-                     Text="Space-separated flags appended as-is to the process command line."/>
+          <Border Style="{StaticResource SettingsCard}">
+            <StackPanel>
+              <TextBlock x:Name="LblDevHead" Style="{StaticResource SectionHead}" Text="DEVELOPER"/>
+              <TextBlock x:Name="LblCountry" Style="{StaticResource FieldLabel}" Text="USER COUNTRY ID"/>
+              <TextBox x:Name="TxtCountry" Text="103" Width="100" HorizontalAlignment="Left" Margin="0,0,0,12"/>
+              <TextBlock x:Name="LblExtra" Style="{StaticResource FieldLabel}" Text="EXTRA ARGS"/>
+              <TextBox x:Name="TxtExtra" AcceptsReturn="False" FontFamily="Consolas"/>
+              <TextBlock x:Name="LblExtraHint" Foreground="{StaticResource Mute}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
+                         Text="Space-separated flags appended as-is to the process command line."/>
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
+      </Grid>
     </Grid>
   </Grid>
 </Window>

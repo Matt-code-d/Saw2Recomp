@@ -99,7 +99,7 @@ If the game dies with `[FATAL] Call to invalid or unregistered function at 0x...
 | AUDIO | mute, SDL queue depth |
 | INPUT | sdl / xinput, mouse+keyboard, sensitivity |
 | LANGUAGE | `--user_language` from packs on your ISO |
-| ADVANCED | boot logo skip (2-frame flash of Konami/Zombie/Lionsgate/Twisted only), log level, extra CLI args |
+| ADVANCED | boot logo skip via UE3 `-nostartupmovies` (guest `--cl=`), HUD mod (health/syringes/items), log level, extra CLI args |
 
 \*FSR/CAS need a FidelityFX-enabled Xenos build of the SDK. Stock 0.10.0 binaries usually expose **bilinear** only. DLSS is not available on the Xenos path.
 

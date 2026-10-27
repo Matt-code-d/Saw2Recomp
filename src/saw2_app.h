@@ -4,15 +4,18 @@
 
 #pragma once
 
+#include "saw2_hud_mod.h"
 #include "ue3_framerate_unlock.h"
 
 #include <rex/cvar.h>
 #include <rex/rex_app.h>
 #include <rex/runtime.h>
 #include <rex/system/xthread.h>
+#include <rex/ui/imgui_dialog.h>
 #include <rex/ui/imgui_drawer.h>
 #include <rex/ui/window.h>
 
+#include <memory>
 #include <string>
 
 class Saw2App : public rex::ReXApp {
@@ -54,7 +57,8 @@ class Saw2App : public rex::ReXApp {
   }
 
   void OnCreateDialogs(rex::ui::ImGuiDrawer* drawer) override {
-    (void)drawer;
+    saw2_hud::RegisterCvars();
+    hud_overlay_ = saw2_hud::CreateOverlay(drawer, immediate_drawer(), runtime());
     ApplyControllerCursorPolicy();
   }
 
@@ -91,4 +95,6 @@ class Saw2App : public rex::ReXApp {
       w->SetCursorVisibility(rex::ui::Window::CursorVisibility::kHidden);
     }
   }
+
+  std::unique_ptr<rex::ui::ImGuiDialog> hud_overlay_;
 };

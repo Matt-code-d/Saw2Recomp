@@ -3,8 +3,9 @@ using System.Buffers.Binary;
 namespace Saw2Launcher.Services;
 
 /// <summary>
-/// Unskippable company logos only. Truncates each original .bik to 2 frames
-/// (brief flash of the REAL logo) instead of swapping in unrelated movies.
+/// Legacy helper: older builds truncated Konami/Zombie/Lionsgate/Twisted .bik files.
+/// Skip is now UE3 <c>-nostartupmovies</c> via <c>--cl=</c>; this class only restores
+/// any leftover <c>.saw2bootskip</c> backups so installs stay clean.
 /// </summary>
 public static class BootLogoSkip
 {
