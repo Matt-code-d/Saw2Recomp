@@ -289,9 +289,6 @@ public partial class MainWindow : Window
     private void ApplyLocale()
     {
         Title = _l["window.title"];
-        NavGroupGame.Text = _l["nav.group.game"];
-        NavGroupSettings.Text = _l["nav.group.settings"];
-        NavGroupExtras.Text = _l["nav.group.extras"];
         NavPlay.Content = _l["nav.play"];
         NavSetup.Content = _l["nav.setup"];
         NavLanguage.Content = _l["nav.language"];

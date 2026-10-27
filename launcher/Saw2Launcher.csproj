@@ -8,7 +8,7 @@
     <AssemblyName>Saw2Launcher</AssemblyName>
     <RootNamespace>Saw2Launcher</RootNamespace>
     <Product>Saw II Flesh and Blood Launcher</Product>
-    <Version>0.1.5</Version>
+    <Version>0.1.6</Version>
     <ApplicationIcon>..\logoLaunch.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>

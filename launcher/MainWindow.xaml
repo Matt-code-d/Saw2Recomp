@@ -28,18 +28,13 @@
         </StackPanel>
 
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel>
-            <TextBlock x:Name="NavGroupGame" Style="{StaticResource NavGroupLabel}" Text="GAME"/>
+          <StackPanel Margin="0,4,0,0">
             <Button x:Name="NavPlay" Style="{StaticResource NavBtn}" Content="PLAY" Click="Nav_Click" Tag="active"/>
             <Button x:Name="NavSetup" Style="{StaticResource NavBtn}" Content="SETUP / ISO" Click="Nav_Click"/>
             <Button x:Name="NavLanguage" Style="{StaticResource NavBtn}" Content="LANGUAGE" Click="Nav_Click"/>
-
-            <TextBlock x:Name="NavGroupSettings" Style="{StaticResource NavGroupLabel}" Text="SETTINGS"/>
             <Button x:Name="NavVideo" Style="{StaticResource NavBtn}" Content="VIDEO" Click="Nav_Click"/>
             <Button x:Name="NavAudio" Style="{StaticResource NavBtn}" Content="AUDIO" Click="Nav_Click"/>
             <Button x:Name="NavInput" Style="{StaticResource NavBtn}" Content="CONTROLS" Click="Nav_Click"/>
-
-            <TextBlock x:Name="NavGroupExtras" Style="{StaticResource NavGroupLabel}" Text="EXTRAS"/>
             <Button x:Name="NavMods" Style="{StaticResource NavBtn}" Content="MODS" Click="Nav_Click"/>
             <Button x:Name="NavAdvanced" Style="{StaticResource NavBtn}" Content="ADVANCED" Click="Nav_Click"/>
           </StackPanel>
