@@ -38,3 +38,20 @@ It does NOT cover, and does NOT grant any rights to:
     (including but not limited to ReXGlue / Xenia-derived components,
     extract-xiso, and their dependencies). Those keep their own licenses;
     see their upstream projects and any bundled license notices.
+
+NO GAME DATA; NO REUPLOADS
+
+This repository is intentionally designed so that it does not include, and
+does not redistribute, any Saw II (or other) game data — no ISOs, XEXes,
+cooked packages, audio, video, or similar assets. Users must supply their
+own legally obtained copy locally (“bring your own dump”).
+
+The copyright holder and contributors do not authorize, host, mirror, or
+endorse any upload or reupload of game files to the internet or any other
+distribution channel. Any such redistribution by third parties is outside
+the scope of this project and is done solely at those parties’ own risk
+and responsibility.
+
+To the maximum extent permitted by applicable law, the copyright holder and
+contributors disclaim any liability for third-party redistribution or other
+misuse of game content in connection with this Software.

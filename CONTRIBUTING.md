@@ -4,7 +4,8 @@ Thanks for helping. This is an unofficial Xbox 360 → PC recomp of **Saw II: Fl
 
 ## Ground rules
 
-- **Bring your own dump.** Never commit ISOs, `Default.xex`, cooked assets, audio, video, or anything from the disc. `game/` is gitignored for a reason.
+- **Bring your own dump.** Never commit ISOs, `Default.xex`, cooked assets, audio, video, or anything from the disc. `game/` is gitignored for a reason. This project is designed **not** to ship or share game data.
+- **No reuploads.** Do not post dumps, mirrors, or links to game files. The maintainer does not authorize or endorse redistributing game content online; that is entirely on whoever does it (see [LICENSE](LICENSE) — “No game data; no reuploads”).
 - **License:** original work here is [MIT](LICENSE) (keep attribution). The game and third-party SDKs/tools are **not** covered by that MIT grant.
 - **No Cursor / agent branding** in commits, PR titles, or docs. Commit as yourself.
 - Prefer **RelWithDebInfo** for play/testing. Do not ship Debug GPU runtimes (`rexgpu-xenosd.dll`) — they assert-storm.

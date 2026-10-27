@@ -156,3 +156,7 @@ MIT covers **only** this port’s own work. It does **not** cover the game itsel
 
 No copyrighted assets, disc images, or XEX binaries are redistributed here. Use only with a copy you own.  
 Saw II: Flesh & Blood © Konami / Zombie Studios / respective rights holders. This project is unofficial and unaffiliated.
+
+**This project is built around not sharing game data.** The repo and releases ship tooling only; every user must provide their own dump locally.  
+The maintainer does **not** authorize, host, or endorse any upload/reupload of game files to the internet (or elsewhere). Anyone who redistributes game content does so on their own, outside this project.  
+To the fullest extent permitted by law, the maintainer disclaims liability for such third-party redistribution.
